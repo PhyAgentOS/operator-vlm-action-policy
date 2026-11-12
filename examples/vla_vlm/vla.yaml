@@ -1,0 +1,51 @@
+# DESIGN ONLY. These candidate interfaces are proposed VLA-runner extensions.
+# VLA does not own native action execution or silently dequeue predicted rows.
+policy_id: vla_libero_candidate
+mode: candidate_only
+model:
+  backend: local_vla
+  checkpoint_env: VLA_CHECKPOINT
+observation:
+  image_inputs:
+    image/main: main
+    image/second: wrist
+  state_semantics:
+  - eef_x_m
+  - eef_y_m
+  - eef_z_m
+  - eef_rx_rad
+  - eef_ry_rad
+  - eef_rz_rad
+  - finger_left_m
+  - finger_right_m
+  synchronization: correlated_observation
+  require_identity: true
+action:
+  space: eef_delta
+  frame: world
+  dimension: 7
+  layout:
+  - dx
+  - dy
+  - dz
+  - drx
+  - dry
+  - drz
+  - gripper
+  units:
+  - m
+  - m
+  - m
+  - rad
+  - rad
+  - rad
+  - normalized
+  gripper_convention: minus1_open_plus1_close
+  prediction_horizon: 8
+  max_prediction_horizon: 8
+  control_dt_s: 0.05
+runtime:
+  generate_on: candidate_request
+  advance_history_on: execution_feedback
+  emit_native_action: false
+  require_reset_ack: true

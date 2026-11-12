@@ -1,0 +1,84 @@
+# DESIGN ONLY. Scenario B; all candidate/request/feedback ports are proposed.
+# Same benchmark port names, but correlated episode/step metadata must be added.
+# Only vlm_policy/action connects to benchmark. No direct VLA action path.
+nodes:
+- id: libero_benchmark
+  path: /opt/nodes/libero_benchmark
+  env:
+    BENCHMARK_CONFIG: ./benchmark.yaml
+    MUJOCO_GL: egl
+    PYOPENGL_PLATFORM: egl
+  inputs:
+    action:
+      source: vlm_policy/action
+      queue_size: 1
+  outputs:
+  - proprio_state
+  - image/main
+  - image/second
+  - policy_command
+  - benchmark_status
+  - benchmark_result
+- id: vla_policy
+  path: /opt/nodes/vla_candidate_policy
+  args: --config ./vla.yaml
+  inputs:
+    tick: dora/timer/millis/20
+    policy_command:
+      source: vlm_policy/candidate_command
+      queue_size: 32
+    candidate_request:
+      source: vlm_policy/candidate_request
+      queue_size: 32
+    execution_feedback:
+      source: vlm_policy/execution_feedback
+      queue_size: 32
+    proprio_state:
+      source: libero_benchmark/proprio_state
+      queue_size: 1
+    image/main:
+      source: libero_benchmark/image/main
+      queue_size: 1
+    image/second:
+      source: libero_benchmark/image/second
+      queue_size: 1
+  outputs:
+  - action_chunk
+  - policy_state
+  - policy_error
+- id: vlm_policy
+  path: /opt/nodes/operator-vlm-action-policy
+  args: --config ./policy.yaml
+  inputs:
+    tick: dora/timer/millis/20
+    policy_command:
+      source: libero_benchmark/policy_command
+      queue_size: 32
+    proprio_state:
+      source: libero_benchmark/proprio_state
+      queue_size: 1
+    image/main:
+      source: libero_benchmark/image/main
+      queue_size: 1
+    image/second:
+      source: libero_benchmark/image/second
+      queue_size: 1
+    benchmark_result: libero_benchmark/benchmark_result
+    vla_action_chunk:
+      source: vla_policy/action_chunk
+      queue_size: 1
+    vla_policy_state:
+      source: vla_policy/policy_state
+      queue_size: 32
+    vla_policy_error:
+      source: vla_policy/policy_error
+      queue_size: 32
+  outputs:
+  - action
+  - action_chunk
+  - policy_state
+  - policy_error
+  - candidate_command
+  - candidate_request
+  - execution_feedback
+  - decision_trace

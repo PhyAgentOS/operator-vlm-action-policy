@@ -2,22 +2,28 @@
 
 # operator-vlm-action-policy
 
-**当前仅提供设计方案，没有确认后的代码实现或可运行节点。**
+**当前仅提供设计方案，没有确认后的实现或可运行节点。**
 
-规划一个独立、内部常驻的 VLM 动作策略节点：输入任务指令、图片和机器人状态，
-由节点自身负责模型推理，输出 EEF 或关节动作片段。**不依赖已有 `operator-vlm-policy` 服务。**
+规划同一个独立、内部常驻动作策略节点，覆盖两种方案：
 
-- [完整方案与流程图](docs/DESIGN_zh.md)
-- [English design](docs/DESIGN.md)
-- [LIBERO dataflow.yaml 草案](examples/libero/dataflow.yaml)
-- [策略配置草案](examples/libero/policy.yaml)
-- [关节输出配置草案](examples/joint/policy.yaml)
+| 方案 | 输入 | 输出 | 业务节点 |
+|---|---|---|---|
+| A：VLM 独立策略 | instruction、obs_state、obs_image | 从生成片段中逐步输出 final_action | benchmark + VLM 动作策略 |
+| B：VLA + VLM | VLA 候选 chunk + 同样的指令与观测 | 保留/修正后的单步 final_action | benchmark + VLA 候选 + 同一个 VLM 动作策略 |
 
-方案定义计划中的节点输入输出、动作契约、生命周期、benchmark 接入和 Skill 封装。
-配置文件均为设计样例，可执行路径对应未来制品；本方案不宣称已经实现、完成模型测评、
-跑通 Dora 集成或通过 Skill 安装验收。
+节点自身接入模型 API 或进程内本地模型，不依赖已有 `operator-vlm-policy` 服务。
+动作片段长度和维度可配置，同时严格绑定动作语义；只有最终 VLM 动作节点向环境输出动作。
 
-默认 LIBERO 七维动作是 EEF 控制量。关节输出需匹配控制器和真实关节观测；
-如果采用 EEF→joint 的 IK 路线，由显式控制适配模块承担。
+- [完整中文设计](docs/DESIGN_zh.md)、[English design](docs/DESIGN.md)：分别给出两种方案流程图、节点输入输出职责、状态/时序、重要配置参数和完整 dataflow。
+- 方案 A：[dataflow](examples/libero/dataflow.yaml)、[policy](examples/libero/policy.yaml)、[benchmark](examples/libero/benchmark.yaml)。
+- 方案 B：[dataflow](examples/vla_vlm/dataflow.yaml)、[最终策略](examples/vla_vlm/policy.yaml)、[VLA 候选](examples/vla_vlm/vla.yaml)、[benchmark](examples/vla_vlm/benchmark.yaml)。
+- [关节输出草案](examples/joint/policy.yaml)：要求真实关节状态和匹配控制器。
+
+所有新配置键与 candidate/request/feedback 端口均为拟议契约。现有 VLA runner 需扩展，
+严格观测身份和 benchmark 即时失败收尾也需集成工作。YAML 路径对应未来制品，
+不宣称已实现、运行模型测试或通过 Skill 安装验收。
+
+默认 LIBERO 接收单步七维动作（六维末端控制量 + 一维夹爪），不直接消费 H×D 片段或七个关节角。
+修改维度不能自动改变坐标系、单位、控制类型和夹爪语义。
 
 采用 Apache-2.0，见 [LICENSE](LICENSE)、[NOTICE](NOTICE)。
