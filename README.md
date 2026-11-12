@@ -16,7 +16,7 @@ or an in-process local model. It does not depend on operator-vlm-policy service.
 Chunk horizons and dimensions are configurable with strict action semantics.
 Only the final VLM action Node writes to the environment.
 
-- [Readable design overview](docs/DESIGN.md), [中文完整方案](docs/DESIGN_zh.md): flowcharts, Node responsibilities and key settings for both scenarios, with links to complete dataflow drafts and detailed contracts.
+- [Readable design overview](docs/DESIGN.md), [中文完整方案](docs/DESIGN_zh.md): architecture and dataflow diagrams, Node responsibilities and key settings for both scenarios, with links to complete dataflow drafts and detailed contracts.
 - Scenario A: [dataflow](examples/libero/dataflow.yaml), [policy](examples/libero/policy.yaml), [benchmark](examples/libero/benchmark.yaml).
 - Scenario B: [dataflow](examples/vla_vlm/dataflow.yaml), [final policy](examples/vla_vlm/policy.yaml), [VLA candidate](examples/vla_vlm/vla.yaml), [benchmark](examples/vla_vlm/benchmark.yaml).
 - [Joint-output draft](examples/joint/policy.yaml): requires genuine joint state and a matching controller.

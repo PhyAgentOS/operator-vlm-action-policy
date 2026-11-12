@@ -14,7 +14,7 @@
 节点自身接入模型 API 或进程内本地模型，不依赖已有 `operator-vlm-policy` 服务。
 动作片段长度和维度可配置，同时严格绑定动作语义；只有最终 VLM 动作节点向环境输出动作。
 
-- [简明中文方案](docs/DESIGN_zh.md)、[English design](docs/DESIGN.md)：分别说明两种方案流程图、节点分工和关键参数，并链接完整 dataflow 草案与接口细节。
+- [简明中文方案](docs/DESIGN_zh.md)、[English design](docs/DESIGN.md)：分别说明两种方案的架构图、数据流图、节点分工和关键参数，并链接完整 dataflow 草案与接口细节。
 - 方案 A：[dataflow](examples/libero/dataflow.yaml)、[policy](examples/libero/policy.yaml)、[benchmark](examples/libero/benchmark.yaml)。
 - 方案 B：[dataflow](examples/vla_vlm/dataflow.yaml)、[最终策略](examples/vla_vlm/policy.yaml)、[VLA 候选](examples/vla_vlm/vla.yaml)、[benchmark](examples/vla_vlm/benchmark.yaml)。
 - [关节输出草案](examples/joint/policy.yaml)：要求真实关节状态和匹配控制器。
