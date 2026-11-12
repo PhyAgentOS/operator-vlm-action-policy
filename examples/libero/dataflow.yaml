@@ -1,0 +1,45 @@
+# DESIGN ONLY: operator-vlm-action-policy is a future artifact, not implemented here.
+# Existing LIBERO port names follow the referenced benchmark-libero repository.
+# Select one compatible Dora/Forge version for ALL artifacts before implementation.
+nodes:
+  - id: libero_benchmark
+    path: /opt/nodes/libero_benchmark
+    env:
+      BENCHMARK_CONFIG: ./benchmark.yaml
+      MUJOCO_GL: egl
+      PYOPENGL_PLATFORM: egl
+    inputs:
+      action:
+        source: vlm_policy/action
+        queue_size: 1
+    outputs:
+      - proprio_state
+      - image/main
+      - image/second
+      - policy_command
+      - benchmark_status
+      - benchmark_result
+
+  - id: vlm_policy
+    path: /opt/nodes/operator-vlm-action-policy
+    args: --config ./policy.yaml
+    inputs:
+      tick: dora/timer/millis/20
+      policy_command:
+        source: libero_benchmark/policy_command
+        queue_size: 32
+      proprio_state:
+        source: libero_benchmark/proprio_state
+        queue_size: 1
+      image/main:
+        source: libero_benchmark/image/main
+        queue_size: 1
+      image/second:
+        source: libero_benchmark/image/second
+        queue_size: 1
+      benchmark_result: libero_benchmark/benchmark_result
+    outputs:
+      - action
+      - action_chunk
+      - policy_state
+      - policy_error

@@ -1,0 +1,17 @@
+# DESIGN ONLY. Actor identity is the FINAL policy, not the VLA candidate producer.
+suite: libero_spatial
+task_ids: '0'
+init_state_ids: '0'
+num_runs: 1
+max_steps: 300
+num_steps_wait: 10
+control_mode: relative
+seed: 0
+layout_mode: per_episode
+camera_height: 256
+camera_width: 256
+policy_id: vlm_libero_final
+send_instruction: true
+serve: false
+result_dir: results/libero
+record_dir: null

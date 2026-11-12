@@ -1,0 +1,72 @@
+# DESIGN ONLY. Seven revolute joints plus gripper; not default LIBERO OSC.
+# Also usable in scenario B only when VLA supplies this same joint contract.
+policy_id: vlm_joint
+mode: standalone
+model:
+  backend: provider_api
+  api_base_env: VLM_API_BASE
+  api_key_env: VLM_API_KEY
+  model_name_env: VLM_MODEL
+  effort_env: VLM_REASONING_EFFORT
+observation:
+  image_inputs:
+    image/main: main
+    image/second: wrist
+  state_semantics:
+  - joint_positions
+  - joint_velocities
+  - gripper_state
+  synchronization: correlated_observation
+  require_identity: true
+action:
+  space: joint_position
+  frame: joint_space
+  dimension: 8
+  layout:
+  - joint1
+  - joint2
+  - joint3
+  - joint4
+  - joint5
+  - joint6
+  - joint7
+  - gripper
+  units:
+  - rad
+  - rad
+  - rad
+  - rad
+  - rad
+  - rad
+  - rad
+  - normalized
+  gripper_convention: minus1_open_plus1_close
+  prediction_horizon: 4
+  max_prediction_horizon: 8
+  execute_horizon: 2
+  control_dt_s: 0.05
+  joint_names:
+  - joint1
+  - joint2
+  - joint3
+  - joint4
+  - joint5
+  - joint6
+  - joint7
+control_adapter:
+  type: joint_position
+  native_dimension: 8
+  limits_source: robot_control_profile
+runtime:
+  tick_ms: 20
+  inference_deadline_ms: 60000
+  feedback_timeout_ms: 5000
+  on_error: abort_evaluation
+  async_prefetch: false
+context:
+  scope: episode
+  max_executed_history: 4
+  include_unexecuted_actions: false
+lifecycle:
+  reset_history_per_episode: true
+  reject_stale_results: true
