@@ -1,0 +1,13 @@
+.venv/
+.audit/
+dist/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+config.local.yaml
+.env
+.llm_config
+*.log
+*.db
+reports/

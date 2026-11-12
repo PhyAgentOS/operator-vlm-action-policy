@@ -1,0 +1,20 @@
+policy_id: vlm_joint
+service_url: http://127.0.0.1:19120
+transport: observation_v1
+auto_start: false
+instruction: Follow the task using the configured joint-position controller.
+action_space: joint_position
+controller: joint_position
+frame: joint_space
+# A two-joint contract example; replace with your robot's actual names and bounds.
+joint_names: [shoulder, elbow]
+joint_lower: [-2.0, -2.0]
+joint_upper: [2.0, 2.0]
+state_names: [shoulder, elbow, gripper]
+state_semantics: [shoulder_rad, elbow_rad, normalized_gripper]
+action_names: [shoulder, elbow, gripper]
+image_inputs:
+  image/main: main
+max_joint_step: 0.1
+max_chunk: 2
+execute_horizon: 1

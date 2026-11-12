@@ -1,0 +1,39 @@
+# Replace executable paths and benchmark checkout path. Run from this directory.
+# LIBERO main e1eb5b6 uses Dora 0.4.1. Both processes AND the Dora CLI must match.
+# Start the existing operator-vlm-policy HTTP service separately before this flow.
+nodes:
+  - id: libero_benchmark
+    path: ./benchmark.sh
+    env:
+      BENCHMARK_CONFIG: ./benchmark.yaml
+      LIBERO_PYTHON: /opt/libero-env/bin/python
+      LIBERO_NODE_ROOT: /opt/benchmark-libero
+      MUJOCO_GL: egl
+      PYOPENGL_PLATFORM: egl
+    inputs:
+      action:
+        source: vlm_policy/action
+        queue_size: 1
+    outputs: [proprio_state, image/main, image/second, policy_command, benchmark_status, benchmark_result]
+
+  - id: vlm_policy
+    path: ./policy.sh
+    env:
+      VLM_ACTION_PYTHON: /opt/vlm-action-env/bin/python
+      VLM_ACTION_CONFIG: ./policy.yaml
+    inputs:
+      tick: dora/timer/millis/20
+      policy_command:
+        source: libero_benchmark/policy_command
+        queue_size: 32
+      proprio_state:
+        source: libero_benchmark/proprio_state
+        queue_size: 1
+      image/main:
+        source: libero_benchmark/image/main
+        queue_size: 1
+      image/second:
+        source: libero_benchmark/image/second
+        queue_size: 1
+      benchmark_result: libero_benchmark/benchmark_result
+    outputs: [action, action_chunk, policy_state, policy_error]

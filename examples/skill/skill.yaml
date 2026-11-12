@@ -1,0 +1,26 @@
+manifest_version: 2
+name: vlm-libero-benchmark
+version: 0.1.0
+description: Evaluate a resident VLM policy with LIBERO benchmark Sessions.
+skill_document: SKILL.md
+gateway_url: http://127.0.0.1:19033
+required_tools:
+- vlm_libero.benchmark.describe
+- vlm_libero.benchmark.run
+profiles:
+  libero:
+    dataflow: profiles/libero/dataflow.yaml
+    required_binaries: []
+    required_assets:
+    - nodes/benchmark.sh
+    - nodes/policy.sh
+    - nodes/gateway.sh
+    required_environment:
+    - VLM_ACTION_PYTHON
+    - LIBERO_PYTHON
+    - LIBERO_NODE_ROOT
+    - GATEWAY_BINARY
+    - VLM_BENCHMARK_WORKSPACE
+artifacts:
+  resolver: local
+  nodes: {}

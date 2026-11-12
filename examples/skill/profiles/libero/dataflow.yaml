@@ -1,0 +1,51 @@
+nodes:
+- id: gateway
+  path: ${PAOS_SKILL_ROOT}/nodes/gateway.sh
+  inputs:
+    tick: dora/timer/millis/20
+    benchmark_tool_in:
+      source: libero_benchmark/tool_out
+      queue_size: 32
+  outputs:
+  - tool_response
+  - benchmark_tool_out
+- id: libero_benchmark
+  path: ${PAOS_SKILL_ROOT}/nodes/benchmark.sh
+  inputs:
+    action:
+      source: vlm_policy/action
+      queue_size: 1
+    tool_in:
+      source: gateway/benchmark_tool_out
+      queue_size: 32
+    tick: dora/timer/millis/1000
+  outputs:
+  - proprio_state
+  - image/main
+  - image/second
+  - policy_command
+  - benchmark_status
+  - benchmark_result
+  - tool_out
+- id: vlm_policy
+  path: ${PAOS_SKILL_ROOT}/nodes/policy.sh
+  inputs:
+    tick: dora/timer/millis/20
+    policy_command:
+      source: libero_benchmark/policy_command
+      queue_size: 32
+    proprio_state:
+      source: libero_benchmark/proprio_state
+      queue_size: 1
+    image/main:
+      source: libero_benchmark/image/main
+      queue_size: 1
+    image/second:
+      source: libero_benchmark/image/second
+      queue_size: 1
+    benchmark_result: libero_benchmark/benchmark_result
+  outputs:
+  - action
+  - action_chunk
+  - policy_state
+  - policy_error
