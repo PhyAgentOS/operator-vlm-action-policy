@@ -1,0 +1,24 @@
+# DESIGN ONLY: requires a joint-position controller and actual joint observations.
+# Do not connect this profile directly to default LIBERO OSC.
+policy_id: vlm_joint
+model:
+  backend: provider_api
+  api_base_env: VLM_API_BASE
+  api_key_env: VLM_API_KEY
+  model_name_env: VLM_MODEL
+  effort_env: VLM_REASONING_EFFORT
+observation:
+  state_semantics: [joint_positions_rad, joint_velocities_rad_s, gripper_state]
+  synchronization: correlated_observation
+  image_inputs:
+    image/main: main
+action:
+  space: joint_position
+  joint_names: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+  gripper: normalized
+  dt_s: 0.05
+  chunk_horizon: 4
+  execute_horizon: 2
+control_adapter:
+  type: joint_position
+  limits_source: robot_control_profile
