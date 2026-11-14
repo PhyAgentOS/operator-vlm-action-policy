@@ -1,0 +1,55 @@
+policy_id: vlm_libero
+mode: standalone
+model:
+  backend: provider_api
+  api_style: chat_completions  # 可改为 responses；API base 应含服务的 /v1 前缀
+  api_base_env: VLM_API_BASE
+  api_key_env: VLM_API_KEY
+  model_name_env: VLM_MODEL
+  effort_env: VLM_REASONING_EFFORT
+  structured_output: true
+  max_output_tokens: 16384
+observation:
+  image_inputs:
+    image/main: main
+    image/second: wrist
+  # 这些是历史 wire 标签，不代表真正的 7 维关节角。
+  state_names: [joint1, joint2, joint3, joint4, joint5, joint6, joint7, gripper]
+  state_semantics: [eef_x_m, eef_y_m, eef_z_m, eef_rx_rad, eef_ry_rad, eef_rz_rad, finger_left_m, finger_right_m]
+  # Old benchmark: one producer, ordered state + both images once per step.
+  # The next complete observation is only an implicit action acknowledgement.
+  synchronization: legacy_lockstep
+  require_identity: false
+action:
+  space: eef_delta
+  frame: world
+  dimension: 7
+  layout: [dx, dy, dz, drx, dry, drz, gripper]
+  units: [m, m, m, rad, rad, rad, normalized]
+  gripper_convention: minus1_open_plus1_close
+  prediction_horizon: 4
+  max_prediction_horizon: 8
+  execute_horizon: 4
+  control_dt_s: 0.05
+control_adapter:
+  type: libero_osc_delta
+  native_dimension: 7
+  translation_scale_m: 0.05
+  rotation_scale_rad: 0.5
+  limits_source: robot_control_profile
+runtime:
+  tick_ms: 20
+  inference_deadline_ms: 120000
+  feedback_timeout_ms: 5000
+  observation_timeout_ms: 120000
+  on_error: abort_evaluation
+  async_prefetch: false
+  # benchmark serve 模式允许多次 run，批次结束后策略进程必须继续驻留。
+  exit_on_benchmark_result: false
+context:
+  scope: episode
+  max_executed_history: 4
+  include_unexecuted_actions: false
+lifecycle:
+  reset_history_per_episode: true
+  reject_stale_results: true

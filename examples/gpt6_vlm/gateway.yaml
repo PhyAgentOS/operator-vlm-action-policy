@@ -1,0 +1,77 @@
+host: 127.0.0.1
+port: 19003
+joint_order: []
+image_input_ids: []
+
+readiness:
+  require_proprio_state: false
+  require_images: false
+
+tools:
+  enabled: true
+  lease_ttl_ms: 120000
+  invoke_timeout_ms: 25200000
+  request_input_id: tool_request
+  response_output_id: tool_response
+  specs:
+    - tool_id: libero.benchmark.describe
+      implementation_id: libero.benchmark.v1
+      endpoint_id: benchmark.controller
+      operation: describe
+      semantics: query
+      description: Read live LIBERO tasks, init states, defaults, and limits before running a batch.
+      input_schema:
+        type: object
+        additionalProperties: false
+        properties: {}
+      output_schema:
+        type: object
+        additionalProperties: true
+      readiness: []
+    - tool_id: libero.benchmark.run
+      implementation_id: libero.benchmark.v1
+      endpoint_id: benchmark.controller
+      operation: run
+      semantics: session
+      description: Run a bounded LIBERO batch using the resident standalone VLM action policy.
+      input_schema:
+        type: object
+        additionalProperties: false
+        properties:
+          task_ids:
+            type: [array, "null"]
+            minItems: 1
+            maxItems: 10
+            items: {type: integer, minimum: 0}
+          init_state_ids:
+            type: [array, "null"]
+            minItems: 1
+            maxItems: 50
+            items: {type: integer, minimum: 0}
+          num_runs: {type: integer, minimum: 1}
+          max_steps: {type: integer, minimum: 1}
+          seed: {type: integer, minimum: 0}
+      output_schema:
+        type: object
+        additionalProperties: false
+        required:
+          - run_id
+          - status
+          - completed_episodes
+          - total_episodes
+          - success_rate
+          - result_file
+          - failure_summary
+        properties:
+          run_id: {type: string}
+          status: {enum: [succeeded, failed, partial, stopped]}
+          completed_episodes: {type: integer, minimum: 0}
+          total_episodes: {type: integer, minimum: 1}
+          success_rate: {type: number, minimum: 0, maximum: 1}
+          result_file: {type: [string, "null"]}
+          failure_summary: {type: [string, "null"]}
+      readiness: []
+  providers:
+    - endpoint_id: benchmark.controller
+      input_id: benchmark_tool_in
+      output_id: benchmark_tool_out
