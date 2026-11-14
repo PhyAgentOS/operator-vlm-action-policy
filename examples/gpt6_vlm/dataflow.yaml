@@ -1,0 +1,76 @@
+# Standalone VLM control: exactly three deployed nodes.
+# gateway owns benchmark tools; the policy calls the model directly.
+# Benchmark comes from Forge runtime; policy source is bundled in Skill nodes/.
+nodes:
+  - id: gateway
+    path: ${FORGE_RUNTIME_BIN}/gateway
+    args: --config gateway.yaml
+    inputs:
+      tick: dora/timer/millis/50
+      benchmark_tool_in:
+        source: libero_benchmark/tool_out
+        queue_size: 32
+    outputs:
+      - tool_response
+      - benchmark_tool_out
+
+  - id: libero_benchmark
+    # Legacy lockstep supports the existing installed benchmark without identity metadata.
+    path: ${FORGE_RUNTIME_BIN}/libero_benchmark
+    env:
+      BENCHMARK_CONFIG: benchmark.yaml
+      MUJOCO_GL: egl
+      PYOPENGL_PLATFORM: egl
+      TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    inputs:
+      tick: dora/timer/millis/1000
+      tool_in:
+        source: gateway/benchmark_tool_out
+        queue_size: 32
+      action:
+        source: operator-vlm-action-policy/action
+        queue_size: 32
+      # Current source handles this port; old binaries ignore it, requiring manual stop on error.
+      policy_error:
+        source: operator-vlm-action-policy/policy_error
+        queue_size: 32
+    outputs:
+      - tool_out
+      - proprio_state
+      - image/main
+      - image/second
+      - policy_command
+      - benchmark_status
+      - benchmark_result
+
+  - id: operator-vlm-action-policy
+    # Launcher loads private model defaults; no credentials in the Dora descriptor.
+    path: ${PAOS_SKILL_ROOT}/nodes/operator-vlm-action-policy/operator-vlm-action-policy.sh
+    env:
+      POLICY_CONFIG: policy.yaml
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    inputs:
+      tick: dora/timer/millis/20
+      policy_command:
+        source: libero_benchmark/policy_command
+        queue_size: 32
+      proprio_state:
+        source: libero_benchmark/proprio_state
+        queue_size: 1
+      image/main:
+        source: libero_benchmark/image/main
+        queue_size: 1
+      image/second:
+        source: libero_benchmark/image/second
+        queue_size: 1
+      benchmark_result:
+        source: libero_benchmark/benchmark_result
+        queue_size: 32
+    outputs:
+      - action
+      - action_chunk
+      - policy_state
+      - policy_error
