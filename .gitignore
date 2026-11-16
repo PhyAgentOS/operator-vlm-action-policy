@@ -1,0 +1,26 @@
+# Python environments and generated files
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local builds and registration receipts
+build/
+dist/
+*.spec
+.local/
+
+# Private deployment settings
+.env
+.env.*
+!.env.example
+gpt6_vlm.json
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
