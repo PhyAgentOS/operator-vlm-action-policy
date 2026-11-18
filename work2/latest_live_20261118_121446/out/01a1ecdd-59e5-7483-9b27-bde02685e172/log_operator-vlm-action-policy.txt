@@ -1,0 +1,82 @@
+{"timestamp":"2026-11-18T04:14:57.840785Z","level":"INFO","fields":{"message":"","name":"MeterProvider.GlobalSet","message":"Global meter provider is set. Meters can now be created using global::meter() or global::meter_with_scope()."},"target":"opentelemetry"}
+[vlm_policy] state=IDLE
+[vlm_policy] state=READY
+[vlm_policy] state=WAIT_RESET
+[vlm_policy] state=WAIT_OBSERVATION
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 19111, "output_tokens": 244, "reasoning_tokens": 121, "visible_output_chars": 158, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 19776, "output_tokens": 213, "reasoning_tokens": 90, "visible_output_chars": 162, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20430, "output_tokens": 165, "reasoning_tokens": 42, "visible_output_chars": 156, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20411, "output_tokens": 210, "reasoning_tokens": 87, "visible_output_chars": 158, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20392, "output_tokens": 243, "reasoning_tokens": 118, "visible_output_chars": 158, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20400, "output_tokens": 255, "reasoning_tokens": 130, "visible_output_chars": 159, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20423, "output_tokens": 145, "reasoning_tokens": 63, "visible_output_chars": 112, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20412, "output_tokens": 244, "reasoning_tokens": 120, "visible_output_chars": 154, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20402, "output_tokens": 248, "reasoning_tokens": 124, "visible_output_chars": 155, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20400, "output_tokens": 215, "reasoning_tokens": 91, "visible_output_chars": 153, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20396, "output_tokens": 268, "reasoning_tokens": 144, "visible_output_chars": 152, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20395, "output_tokens": 216, "reasoning_tokens": 93, "visible_output_chars": 147, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20388, "output_tokens": 192, "reasoning_tokens": 69, "visible_output_chars": 138, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20380, "output_tokens": 295, "reasoning_tokens": 172, "visible_output_chars": 136, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20374, "output_tokens": 179, "reasoning_tokens": 56, "visible_output_chars": 138, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20381, "output_tokens": 230, "reasoning_tokens": 107, "visible_output_chars": 136, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20384, "output_tokens": 219, "reasoning_tokens": 96, "visible_output_chars": 149, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_provider] {"event": "provider_response", "api_style": "chat_completions", "request_model": "gpt-6.1-sol", "request_token_parameter": "max_completion_tokens", "request_max_output_tokens": 16384, "request_reasoning_effort": "low", "structured_output": true, "response_model": "gpt-6.1-sol", "input_tokens": 20387, "output_tokens": 178, "reasoning_tokens": 55, "visible_output_chars": 163, "finish_reason": "stop", "content_is_text": true, "content_is_empty": false}
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=WAIT_ACK
+[vlm_policy] state=INFER
+[vlm_policy] error=inference_timeout
+[vlm_policy] state=ERROR
+[vlm_policy] state=DONE
+[vlm_policy] state=STOPPED

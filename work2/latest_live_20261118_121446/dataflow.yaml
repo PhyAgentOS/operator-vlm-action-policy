@@ -1,0 +1,89 @@
+nodes:
+- id: gateway
+  path: /home/gx/.PhyAgentOS/forge_runtime/nodes/gateway/versions/gateway-1.1.0-linux-x86_64/gateway
+  args: --config /home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/gateway.yaml
+  inputs:
+    tick: dora/timer/millis/50
+    benchmark_tool_in:
+      source: libero_benchmark/tool_out
+      queue_size: 32
+  outputs:
+  - tool_response
+  - benchmark_tool_out
+- id: libero_benchmark
+  path: /home/gx/python_project/gitlab/libero/build/benchmark-policy-errors/libero_benchmark
+  env:
+    BENCHMARK_CONFIG: /home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/benchmark.yaml
+    MUJOCO_GL: egl
+    PYOPENGL_PLATFORM: egl
+    TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD: '1'
+    OMP_NUM_THREADS: '1'
+    OPENBLAS_NUM_THREADS: '1'
+  inputs:
+    tick: dora/timer/millis/1000
+    tool_in:
+      source: gateway/benchmark_tool_out
+      queue_size: 32
+    action:
+      source: operator-vlm-action-policy/action
+      queue_size: 32
+    policy_error:
+      source: operator-vlm-action-policy/policy_error
+      queue_size: 32
+  outputs:
+  - tool_out
+  - proprio_state
+  - image/main
+  - image/second
+  - policy_command
+  - benchmark_status
+  - benchmark_result
+- id: operator-vlm-action-policy
+  path: /home/gx/Desktop/operator-vlm-action-policy/operator-vlm-action-policy.sh
+  env:
+    POLICY_CONFIG: /home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/policy.yaml
+    OMP_NUM_THREADS: '1'
+    OPENBLAS_NUM_THREADS: '1'
+    VLM_ENV_FILE: /home/gx/.config/paos/libero/gpt6_vlm.json
+    POLICY_PREPARED_MANIFEST: /home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/profile_manifest.json
+  inputs:
+    tick: dora/timer/millis/20
+    policy_command:
+      source: libero_benchmark/policy_command
+      queue_size: 32
+    proprio_state:
+      source: libero_benchmark/proprio_state
+      queue_size: 1
+    image/main:
+      source: libero_benchmark/image/main
+      queue_size: 1
+    image/second:
+      source: libero_benchmark/image/second
+      queue_size: 1
+    benchmark_result:
+      source: libero_benchmark/benchmark_result
+      queue_size: 32
+  outputs:
+  - action
+  - action_chunk
+  - policy_state
+  - policy_error
+- id: libero_viewer
+  path: /home/gx/python_project/gitlab/libero/scripts/view_gpt6_vlm.sh
+  args: --port 19024
+  inputs:
+    main:
+      source: libero_benchmark/image/main
+      queue_size: 1
+    wrist:
+      source: libero_benchmark/image/second
+      queue_size: 1
+    benchmark_status:
+      source: libero_benchmark/benchmark_status
+      queue_size: 8
+    policy_state:
+      source: operator-vlm-action-policy/policy_state
+      queue_size: 8
+    policy_error:
+      source: operator-vlm-action-policy/policy_error
+      queue_size: 8

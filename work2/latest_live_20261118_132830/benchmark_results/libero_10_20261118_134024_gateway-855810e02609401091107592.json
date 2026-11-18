@@ -1,0 +1,42 @@
+{
+  "schema_version": "benchmark_execution_result_v1",
+  "benchmark": "libero",
+  "status": "stopped",
+  "suite": "libero_10",
+  "execution_mode": "target_native",
+  "max_steps": 520,
+  "control_mode": "relative",
+  "layout_mode": "per_episode",
+  "seed": 0,
+  "reproducibility": {
+    "layout_mode": "per_episode",
+    "control_mode": "relative",
+    "num_steps_wait": 10,
+    "camera": [
+      256,
+      256
+    ]
+  },
+  "primary_metric": {
+    "name": "success_rate",
+    "value": 0.0,
+    "max": 1.0
+  },
+  "metrics": {},
+  "successes": 0,
+  "total_episodes": 1,
+  "completed_episodes": 0,
+  "valid_episodes": 0,
+  "success_rate": 0.0,
+  "num_steps": 0,
+  "mean_policy_latency_ms": null,
+  "elapsed_s": 699.9931497573853,
+  "timed_out_episodes": 0,
+  "episodes": [],
+  "first_attempt_successes": null,
+  "final_successes": null,
+  "first_attempt_score": null,
+  "assisted_final_score": null,
+  "episodes_replanned": null,
+  "recovered_after_replan": null
+}

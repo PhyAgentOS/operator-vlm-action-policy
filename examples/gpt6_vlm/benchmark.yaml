@@ -1,0 +1,24 @@
+# Keep the existing gpt6 profile's actual suite/task/step defaults.
+suite: libero_10
+task_ids: [2]
+init_state_ids: [0]
+num_runs: 1
+max_steps: 520
+num_steps_wait: 10
+control_mode: relative
+seed: 0
+layout_mode: per_episode
+camera_height: 256
+camera_width: 256
+
+policy_id: vlm_libero
+send_instruction: true
+# Current source emits the legacy wire format; old installed binaries ignore this key.
+correlated_observations: false
+
+# gateway starts each batch through benchmark.controller/run.
+serve: true
+max_total_episodes: 1
+max_max_steps: 1000
+result_dir: results/gpt6_vlm
+record_dir: null
