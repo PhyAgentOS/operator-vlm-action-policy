@@ -39,7 +39,9 @@ control_adapter:
   limits_source: robot_control_profile
 runtime:
   tick_ms: 20
+  # Provider API 每次请求的超时；总推理预算为该值 × (1 + 重试次数)。
   inference_deadline_ms: 120000
+  inference_timeout_retries: 2
   feedback_timeout_ms: 5000
   observation_timeout_ms: 120000
   on_error: abort_evaluation

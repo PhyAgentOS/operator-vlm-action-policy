@@ -76,6 +76,10 @@ class PolicyRuntime:
                  clock: Callable[[], float] = time.monotonic, worker=None):
         config.validate()
         self.config, self.emit, self.clock = config, emit, clock
+        # Provider retries run serially in the worker and each gets its own timeout.
+        attempts = (1 + config.runtime.inference_timeout_retries
+                    if config.model.backend == "provider_api" else 1)
+        self.inference_budget_ms = config.runtime.inference_deadline_ms * attempts
         self.adapter = ActionAdapter(config)
         self.buffer = ObservationBuffer(config)
         self.worker = worker or InferenceWorker(backend)
@@ -395,7 +399,7 @@ class PolicyRuntime:
                 self.active_token = None
                 elapsed_ms = (self.clock() - self.inference_started) * 1000
                 self.inference_started = None
-                if elapsed_ms > self.config.runtime.inference_deadline_ms:
+                if elapsed_ms > self.inference_budget_ms:
                     self._fail("inference_timeout", "model inference deadline exceeded")
                 elif error:
                     # Worker returns only fixed diagnostic labels, never raw exceptions.
@@ -425,7 +429,7 @@ class PolicyRuntime:
         if not self.running or self.failed or self.needs_reset:
             return
         now = self.clock()
-        if self.active_token and (now - self.inference_started) * 1000 > self.config.runtime.inference_deadline_ms:
+        if self.active_token and (now - self.inference_started) * 1000 > self.inference_budget_ms:
             self._fail("inference_timeout", "model inference deadline exceeded")
         elif self.pending and (now - self.pending.sent_at) * 1000 > self.config.runtime.feedback_timeout_ms:
             self._fail("feedback_timeout", "environment action acknowledgement timed out")

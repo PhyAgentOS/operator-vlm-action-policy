@@ -70,6 +70,7 @@ class AdapterConfig:
 class RuntimeConfig:
     tick_ms: int = 20
     inference_deadline_ms: int = 60000
+    inference_timeout_retries: int = 2
     feedback_timeout_ms: int = 5000
     observation_timeout_ms: int = 60000
     on_error: str = "abort_evaluation"
@@ -198,6 +199,9 @@ class PolicyConfig:
         for name in ("tick_ms", "inference_deadline_ms", "feedback_timeout_ms", "observation_timeout_ms"):
             value = getattr(self.runtime, name)
             require(type(value) is int and value > 0, f"runtime.{name} must be a positive integer")
+        require(type(self.runtime.inference_timeout_retries) is int
+                and 0 <= self.runtime.inference_timeout_retries <= 2,
+                "runtime.inference_timeout_retries must be an integer between 0 and 2")
         require(type(self.runtime.exit_on_benchmark_result) is bool, "exit_on_benchmark_result must be boolean")
         require(self.runtime.on_error == "abort_evaluation" and self.runtime.async_prefetch is False, "only serial inference with abort_evaluation is supported")
         require(self.context.scope == "episode" and self.context.include_unexecuted_actions is False, "context must contain confirmed episode history only")

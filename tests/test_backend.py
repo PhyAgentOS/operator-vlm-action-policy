@@ -86,6 +86,46 @@ def test_real_http_responses_api(monkeypatch):
     assert len([part for part in body["input"][0]["content"] if part["type"] == "input_image"]) == 2
 
 
+@pytest.mark.parametrize("style", ["chat_completions", "responses"])
+@pytest.mark.parametrize("template", [
+    "```json\n%s\n```",
+    "```\n%s\n```",
+    " \n```JSON \r\n%s\r\n```\n ",
+])
+def test_fenced_action_json(monkeypatch, style, template):
+    actions = {"actions": [[0.01, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0]] * 4}
+    text = template % json.dumps(actions, indent=2)
+    client = backend(monkeypatch, "https://example.invalid/v1", style)
+    if style == "responses":
+        response = {"status": "completed", "output": [
+            {"type": "message", "content": [{"type": "output_text", "text": text}]},
+        ]}
+    else:
+        response = {"choices": [{"finish_reason": "stop", "message": {"content": text}}]}
+    monkeypatch.setattr(client.opener, "open", lambda *args, **kwargs:
+                        BytesIO(json.dumps(response).encode()))
+    assert client.infer(REQUEST) == actions
+
+
+@pytest.mark.parametrize("text", [
+    "Explanation:\n```json\n{}\n```",
+    "```json\n{}\n```\nExplanation",
+    "```json\n{}",
+    "{}\n```",
+    "```python\n{}\n```",
+    "```json\n{invalid}\n```",
+    "```json\n[]\n```",
+    "```json\n{}\n```\n```json\n{}\n```",
+])
+def test_invalid_fenced_action_json(monkeypatch, text):
+    client = backend(monkeypatch, "https://example.invalid/v1")
+    response = {"choices": [{"finish_reason": "stop", "message": {"content": text}}]}
+    monkeypatch.setattr(client.opener, "open", lambda *args, **kwargs:
+                        BytesIO(json.dumps(response).encode()))
+    with pytest.raises(ProviderResponseError, match="^invalid_action_json$"):
+        client.infer(REQUEST)
+
+
 @pytest.mark.parametrize("response,label", [
     ({"choices": [{"finish_reason": "length", "message": {"content": "{}"}}]}, "output_truncated"),
     ({"choices": [{"finish_reason": "stop", "message": {"refusal": "private text", "content": "{}"}}]}, "model_refusal"),
@@ -110,6 +150,70 @@ def test_provider_errors_do_not_leak_secret_or_body(monkeypatch, status):
     assert "unit-test-secret" not in str(error.value)
 
 
+@pytest.mark.parametrize("style", ["chat_completions", "responses"])
+@pytest.mark.parametrize("wrapped", [False, True])
+@pytest.mark.parametrize("failure_phase", ["open", "read"])
+@pytest.mark.parametrize("timeouts", [1, 2, 3])
+def test_retry_provider_timeouts(monkeypatch, style, wrapped, failure_phase, timeouts):
+    client = backend(monkeypatch, "https://example.invalid/v1", style)
+    if style == "responses":
+        response = {"status": "completed", "output": [
+            {"type": "message", "content": [
+                {"type": "output_text", "text": json.dumps(ACTIONS)}]},
+        ]}
+    else:
+        response = {"choices": [{"finish_reason": "stop", "message": {
+            "content": json.dumps(ACTIONS)}}]}
+    error = TimeoutError("private timeout")
+    if wrapped:
+        error = urllib.error.URLError(error)
+    attempts, streams = [], []
+
+    class TimedOutStream(BytesIO):
+        def read(self, *args):
+            raise error
+
+    def open_request(request, *, timeout):
+        attempts.append((request.data, timeout))
+        if len(attempts) <= timeouts:
+            if failure_phase == "open":
+                raise error
+            stream = TimedOutStream()
+        else:
+            stream = BytesIO(json.dumps(response).encode())
+        streams.append(stream)
+        return stream
+
+    monkeypatch.setattr(client.opener, "open", open_request)
+    if timeouts == 3:
+        with pytest.raises(ProviderConnectionError, match="^connection_timeout$"):
+            client.infer(REQUEST)
+    else:
+        assert client.infer(REQUEST) == ACTIONS
+    assert len(attempts) == min(timeouts + 1, 3)
+    assert all(attempt == attempts[0] for attempt in attempts)
+    assert all(stream.closed for stream in streams)
+
+
+def test_provider_timeout_retries_can_be_disabled(monkeypatch):
+    monkeypatch.setenv("VLM_API_BASE", "https://example.invalid/v1")
+    monkeypatch.setenv("VLM_API_KEY", "unit-test-secret")
+    monkeypatch.setenv("VLM_MODEL", "test-vision-model")
+    client = ProviderBackend(PolicyConfig.from_mapping({
+        "runtime": {"inference_timeout_retries": 0},
+    }))
+    attempts = []
+
+    def open_request(*args, **kwargs):
+        attempts.append(1)
+        raise TimeoutError()
+
+    monkeypatch.setattr(client.opener, "open", open_request)
+    with pytest.raises(ProviderConnectionError, match="^connection_timeout$"):
+        client.infer(REQUEST)
+    assert len(attempts) == 1
+
+
 @pytest.mark.parametrize("reason,label", [
     (TimeoutError("unit-test-secret timeout"), "connection_timeout"),
     (ssl.SSLError("unit-test-secret TLS"), "tls_error"),
@@ -124,7 +228,10 @@ def test_network_errors_are_sanitized(monkeypatch, reason, label, wrapped):
     if isinstance(error, str):
         error = OSError(error)
 
+    attempts = []
+
     def fail_open(*args, **kwargs):
+        attempts.append(1)
         raise error
 
     monkeypatch.setattr(client.opener, "open", fail_open)
@@ -132,6 +239,7 @@ def test_network_errors_are_sanitized(monkeypatch, reason, label, wrapped):
         client.infer(REQUEST)
     assert str(caught.value) == label
     assert inference_diagnostic(caught.value) == label
+    assert len(attempts) == (3 if label == "connection_timeout" else 1)
 
 
 @pytest.mark.parametrize("response,label", [

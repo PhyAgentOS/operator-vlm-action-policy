@@ -279,26 +279,30 @@ class ProviderBackend:
             "Authorization": f"Bearer {self.key}", "Content-Type": "application/json",
             "User-Agent": "vlm-action-policy/0.1",
         })
-        try:
-            with self.opener.open(http_request, timeout=self.config.runtime.inference_deadline_ms / 1000) as response:
-                # Bound responses; neither provider error bodies nor credentials enter policy_error.
-                raw = response.read(4 * 1024 * 1024 + 1)
-                if len(raw) > 4 * 1024 * 1024:
-                    raise ProviderResponseError("response_too_large")
-        except urllib.error.HTTPError as exc:
-            exc.close()
-            raise ProviderHTTPError(exc.code) from None
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
-            if isinstance(reason, TimeoutError):
-                label = "connection_timeout"
-            elif isinstance(reason, ssl.SSLError):
-                label = "tls_error"
-            elif isinstance(reason, socket.gaierror):
-                label = "dns_error"
-            else:
-                label = "connection_failed"
-            raise ProviderConnectionError(label) from None
+        for attempt in range(self.config.runtime.inference_timeout_retries + 1):
+            try:
+                with self.opener.open(http_request, timeout=self.config.runtime.inference_deadline_ms / 1000) as response:
+                    # Bound responses; neither provider error bodies nor credentials enter policy_error.
+                    raw = response.read(4 * 1024 * 1024 + 1)
+                    if len(raw) > 4 * 1024 * 1024:
+                        raise ProviderResponseError("response_too_large")
+                break
+            except urllib.error.HTTPError as exc:
+                exc.close()
+                raise ProviderHTTPError(exc.code) from None
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+                if isinstance(reason, TimeoutError):
+                    if attempt < self.config.runtime.inference_timeout_retries:
+                        continue
+                    label = "connection_timeout"
+                elif isinstance(reason, ssl.SSLError):
+                    label = "tls_error"
+                elif isinstance(reason, socket.gaierror):
+                    label = "dns_error"
+                else:
+                    label = "connection_failed"
+                raise ProviderConnectionError(label) from None
         try:
             parsed = json.loads(raw)
             self._log_response_diagnostic(parsed, request_payload)
@@ -335,6 +339,15 @@ class ProviderBackend:
         except (KeyError, IndexError, TypeError, AttributeError, ValueError):
             raise ProviderResponseError("malformed_response") from None
         try:
+            if isinstance(text, str):
+                # Accept one complete Markdown JSON code block, without extracting
+                # JSON from surrounding prose or relaxing the JSON parser itself.
+                fenced = re.fullmatch(
+                    r"\s*```(?:json)?[ \t]*\r?\n(.*?)\r?\n```\s*", text,
+                    flags=re.DOTALL | re.IGNORECASE,
+                )
+                if fenced:
+                    text = fenced.group(1)
             result = json.loads(text)
             if not isinstance(result, dict):
                 raise ProviderResponseError("invalid_action_json")

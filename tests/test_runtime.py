@@ -178,11 +178,53 @@ def test_deadlines_fail_once(rig, phase, code):
     if phase == "ack":
         worker.complete()
         runtime.tick()
-    clock.advance(61)
+    clock.advance(181 if phase == "infer" else 61)
     runtime.tick()
     runtime.tick()
     assert len(sent(outputs, "policy_error")) == 1
     assert sent(outputs, "policy_error")[0][1]["code"] == code
+
+
+def test_provider_retry_budget_allows_episode_to_continue(rig):
+    runtime, outputs, worker, clock = rig
+    observation(runtime)
+    clock.advance(61)
+    runtime.tick()
+    assert not runtime.failed
+    assert not sent(outputs, "policy_error")
+    clock.advance(8)
+    worker.complete()
+    runtime.tick()
+    assert not runtime.failed
+    assert len(sent(outputs, "action")) == 1
+    assert sent(outputs, "action_chunk")[0][1]["inference_wall_ms"] == 69000
+    first = sent(outputs, "action")[0]
+    observation(runtime, 1, ack=first[2]["action_id"])
+    assert len(sent(outputs, "action")) == 2
+
+
+def test_result_after_total_retry_budget_is_rejected(rig):
+    runtime, outputs, worker, clock = rig
+    observation(runtime)
+    clock.advance(181)
+    worker.complete()
+    runtime.tick()
+    assert runtime.failed
+    assert not sent(outputs, "action")
+    assert sent(outputs, "policy_error")[0][1]["code"] == "inference_timeout"
+
+
+@pytest.mark.parametrize("error", ["connection_timeout", "invalid_action_json"])
+def test_exhausted_or_non_timeout_provider_error_fails_once(rig, error):
+    runtime, outputs, worker, _ = rig
+    observation(runtime)
+    worker.complete(error=error)
+    runtime.tick()
+    runtime.tick()
+    assert runtime.failed
+    assert len(worker.requests) == 1
+    assert len(sent(outputs, "policy_error")) == 1
+    assert not sent(outputs, "action")
 
 
 @pytest.mark.parametrize("command", ["pause", "stop", "set_instruction"])
