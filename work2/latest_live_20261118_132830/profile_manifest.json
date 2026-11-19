@@ -1,0 +1,58 @@
+{
+  "profile": "gpt6_vlm",
+  "suite": "libero_10",
+  "source_profile": "/home/gx/Desktop/operator-vlm-action-policy/examples/gpt6_vlm",
+  "source_sha256": {
+    "dataflow.yaml": "d17c4766b2962ca8d394d7e2a18e068f307306358aed6dc18990d33e7d31f58b",
+    "gateway.yaml": "d4c71b416ecb120f85ad8a2c723265243e6c2be7f0e9287e8321cb0428a3984f",
+    "benchmark.yaml": "e690108ed3a89262d08c857209ca33b0eb8066184232f1b8c51b6fa64d51fdb8",
+    "policy.yaml": "ce7ed1c085c630919b43cc51d45ed491a30b76616f40f71e61dfdf6f63fb7325"
+  },
+  "gateway_url": "http://127.0.0.1:19023",
+  "benchmark_binary": "/home/gx/python_project/gitlab/libero/build/benchmark-policy-errors/libero_benchmark",
+  "max_total_episodes": 1,
+  "recording_requested": true,
+  "viewer_url": "http://127.0.0.1:19024",
+  "planned_arguments": {
+    "task_ids": [
+      2
+    ],
+    "init_state_ids": [
+      0
+    ],
+    "num_runs": 1,
+    "seed": 0,
+    "max_steps": 520
+  },
+  "expected_episodes": 1,
+  "api_style": "chat_completions",
+  "thinking_mode": "default",
+  "prediction_horizon": 4,
+  "execute_horizon": 2,
+  "planning_memory": false,
+  "local_recovery": false,
+  "synchronization": "correlated_observation",
+  "benchmark_protocol_check": {
+    "binary_sha256": "3d4506e120455938f822399fafecfcaf08611f2a9d054b5c5de7a1ac43dce0d7",
+    "report": {
+      "policy_error_self_check": "passed",
+      "legacy_lockstep": true,
+      "correlated_observations": true,
+      "failure_result_persisted": true,
+      "terminal_event_emitted_once": true,
+      "next_invocation_accepted": true,
+      "simulator_started": false,
+      "model_api_called": false
+    }
+  },
+  "policy_source_sha256": {
+    "__init__.py": "cd77db1bf7e551bc8f5051f33b275e83b9f83e059ceb3ae9e4849457873178a9",
+    "backend.py": "7a8aa0c7ac9d3dd0cea6cfb95648a0a321e3021e17842a087591d47517f8b85a",
+    "config.py": "21fbe87ed64e1a196ca120084887f36cef678800e15e61140cc5f3fef159a794",
+    "contracts.py": "b85d50d1e73b29851c1c6b97bcea004b66f8593de6ca9445bb9058215bc0032f",
+    "environment.py": "46c1a8de0ea44a1f0f415e97f8d33c2b031cc9eed7ca19c9b3a4aee7ee737299",
+    "main.py": "3fc13a3f2de536d1dd00ff275bfd17339e5c23820131899fb8f5ada6659b48cd",
+    "runtime.py": "4d69dba4b1f5ad03e60c714ea2a4d19151c10f0b3b40250e4e54742a15f25915"
+  },
+  "staged_policy_sha256": "9d0799d105bafd447510c2bd872f4c544058f9f0509be2a6abc02ba30b778c84"
+}

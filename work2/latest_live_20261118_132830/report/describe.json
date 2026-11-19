@@ -1,0 +1,79 @@
+{
+  "benchmark": "libero",
+  "camera_ids": [],
+  "defaults": {
+    "correlated_observations": true,
+    "max_steps": 520,
+    "num_runs": 1,
+    "seed": 0
+  },
+  "joint_names": [
+    "joint1",
+    "joint2",
+    "joint3",
+    "joint4",
+    "joint5",
+    "joint6",
+    "joint7",
+    "gripper"
+  ],
+  "limits": {
+    "max_max_steps": 1000,
+    "max_total_episodes": 1
+  },
+  "num_tasks": 10,
+  "policy_id": "vlm_libero",
+  "suite": "libero_10",
+  "tasks": [
+    {
+      "language": "put both the alphabet soup and the tomato sauce in the basket",
+      "num_init_states": 50,
+      "task_id": 0
+    },
+    {
+      "language": "put both the cream cheese box and the butter in the basket",
+      "num_init_states": 50,
+      "task_id": 1
+    },
+    {
+      "language": "turn on the stove and put the moka pot on it",
+      "num_init_states": 50,
+      "task_id": 2
+    },
+    {
+      "language": "put the black bowl in the bottom drawer of the cabinet and close it",
+      "num_init_states": 50,
+      "task_id": 3
+    },
+    {
+      "language": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+      "num_init_states": 50,
+      "task_id": 4
+    },
+    {
+      "language": "pick up the book and place it in the back compartment of the caddy",
+      "num_init_states": 50,
+      "task_id": 5
+    },
+    {
+      "language": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+      "num_init_states": 50,
+      "task_id": 6
+    },
+    {
+      "language": "put both the alphabet soup and the cream cheese box in the basket",
+      "num_init_states": 50,
+      "task_id": 7
+    },
+    {
+      "language": "put both moka pots on the stove",
+      "num_init_states": 50,
+      "task_id": 8
+    },
+    {
+      "language": "put the yellow and white mug in the microwave and close it",
+      "num_init_states": 50,
+      "task_id": 9
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+﻿episode_id,suite,task_id,init_state_id,run_index,task_description,success,termination,num_steps,return_value,episode_seed,mean_policy_latency_ms,success_source,error_code,error_message,video
+libero_10_t2_i0_r0,libero_10,2,0,0,turn on the stove and put the moka pot on it,False,failed,36,0.0,149578303,5905.506465170119,env.env._check_success,inference_timeout,model inference deadline exceeded,/home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/recordings/ep_t2_i0_r0_failed.mp4

@@ -1,0 +1,16 @@
+{
+  "kind": "node",
+  "name": "operator-vlm-action-policy",
+  "version": "0.1.0",
+  "bundle": "./dist/release/operator-vlm-action-policy-0.1.0-linux-x86_64.tar.gz",
+  "metadata": {
+    "artifact_id": "operator-vlm-action-policy-0.1.0-linux-x86_64",
+    "node_type": "operator",
+    "repository": "operator-vlm-action-policy",
+    "github_url": "https://github.com/PhyAgentOS/operator-vlm-action-policy",
+    "platform": "linux",
+    "arch": "x86_64",
+    "artifact_type": "directory_tar_gz",
+    "entrypoint": "operator-vlm-action-policy"
+  }
+}

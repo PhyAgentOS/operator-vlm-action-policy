@@ -1,0 +1,158 @@
+# operator-vlm-action-policy 策略配置示例。
+# 对应本仓库 examples/gpt6_vlm/dataflow.yaml 的 LIBERO 输入/动作协议。
+# 模型凭据通过环境变量或 --env-file 提供，不要把密钥写入此文件。
+# 修改输入端口、状态顺序或动作单位时，必须同时核对 benchmark / 控制器协议。
+# 未知字段、不支持的组合或非法取值会在启动时被拒绝。
+
+# 策略标识：policy_command 中的 policy_id 必须与此一致，否则命令会被忽略。
+policy_id: vlm_libero
+# 运行模式：当前仅支持 standalone，由本节点独立完成观察、推理和动作输出。
+mode: standalone
+
+# 模型调用方式和请求参数。
+model:
+  # provider_api：通过 HTTP 调用模型；local_python：使用本地 Python 模型插件。
+  # 若切换为 local_python，还需提供 local_factory: "模块路径:工厂函数"；
+  # 工厂接收 PolicyConfig，返回实现 infer(request) -> dict 的对象。
+  backend: provider_api
+  # HTTP API 协议，可选 chat_completions 或 responses，须与服务端支持的接口匹配。
+  # 分别在 API base 后追加 /chat/completions 或 /responses。
+  api_style: chat_completions
+  # API 基础地址所在的环境变量名，不是地址本身。
+  # 例如将 VLM_API_BASE 设置为 https://服务地址/v1；不要包含具体接口后缀。
+  api_base_env: VLM_API_BASE
+  # API 密钥所在的环境变量名；provider_api 模式下该变量必须非空。
+  api_key_env: VLM_API_KEY
+  # 模型名称所在的环境变量名；provider_api 模式下该变量必须非空。
+  model_name_env: VLM_MODEL
+  # 推理强度所在的环境变量名；为空时不向服务端发送推理强度参数。
+  # 非空值会原样发送，允许值由模型服务决定；强度升高可能增加耗时及 token 用量。
+  effort_env: VLM_REASONING_EFFORT
+  # 是否在请求中启用严格 JSON Schema 结构化输出，要求服务端支持对应功能。
+  # 关闭后仍要求响应为可解析的动作 JSON，且仍执行维度、范围等动作校验。
+  structured_output: true
+  # 单次请求的输出 token 上限，必须为正整数。
+  # Chat Completions 使用 max_completion_tokens，Responses 使用 max_output_tokens；
+  # 推理模型的隐藏推理也可能占用该预算。过小可能触发 output_truncated；
+  # 增大此值不会自动延长下面的推理超时，也不会改变动作预测步数。
+  max_output_tokens: 16384
+
+# 观察输入：相机图像和机器人状态如何对应到模型的观察内容。
+observation:
+  # 键是本节点接收的 Dora 图像输入端口，值是发送给模型的相机名称。
+  # 端口须与 dataflow.yaml 一致；相机名称必须唯一，完整观察须收齐所有配置图像。
+  image_inputs:
+    # 主视角相机。
+    image/main: main
+    # 腕部视角相机。
+    image/second: wrist
+  # Forge JointState 消息的传输标签及顺序，必须与输入消息完全一致。
+  # 这些是线上标签，不代表实际物理含义；当前 LIBERO 的 8 维不是 7 个关节角。
+  state_names: [joint1, joint2, joint3, joint4, joint5, joint6, joint7, gripper]
+  # 上述每一维的实际含义，与 state_names 一一对应，并按此名称传给模型。
+  # 前 3 维是末端位置（米），中间 3 维是末端旋转向量（弧度），
+  # 最后 2 维是左右手指位置（米）；不要仅根据 joint1 等传输标签改成关节角。
+  state_semantics: [eef_x_m, eef_y_m, eef_z_m, eef_rx_rad, eef_ry_rad, eef_rz_rad, finger_left_m, finger_right_m]
+  # legacy_lockstep：兼容当前无身份 metadata 的 benchmark，按串行观察/动作节奏运行。
+  # correlated_observation：严格关联模式，要求观察及命令携带完整身份信息，
+  # 并通过 last_action_id 确认动作；必须有 benchmark 端协议支持才可切换。
+  synchronization: legacy_lockstep
+  # 必须与同步模式配套：legacy_lockstep 为 false，correlated_observation 为 true。
+  # 旧版模式无法可靠区分暂停前后的无身份帧，pause 后需重启策略和 benchmark。
+  require_identity: false
+
+# 模型输出动作的物理协议；模型返回的是物理量，由 control_adapter 转成控制器输入。
+action:
+  # eef_delta：末端位姿增量；当前示例使用 6 维位姿增量加 1 维夹爪。
+  # 另支持 joint_position，但需同步配置关节布局、真实关节状态、边界和步长限制，
+  # 不能只修改此字段来切换控制模式。
+  space: eef_delta
+  # 位姿增量参考系。eef_delta 当前只支持 world，即世界坐标系。
+  frame: world
+  # 每个动作的维度，包含夹爪；当前 eef_delta 必须为 7。
+  dimension: 7
+  # 每个动作数组的元素顺序：平移增量、旋转增量、夹爪命令。
+  # drx/dry/drz 是世界系轴角旋转向量的增量，按 delta_R @ current_R 合成，
+  # 不是三个独立欧拉角增量。
+  layout: [dx, dy, dz, drx, dry, drz, gripper]
+  # 与 layout 一一对应：平移单位米，旋转单位弧度，夹爪为归一化数值。
+  units: [m, m, m, rad, rad, rad, normalized]
+  # 夹爪符号约定：-1 为打开，+1 为闭合；数值范围为 [-1, 1]。
+  gripper_convention: minus1_open_plus1_close
+  # 预测步数 H：要求模型一次返回恰好 4 行动作；整段动作先校验，再执行。
+  prediction_horizon: 4
+  # 配置允许的预测步数上限，不是实际请求步数，也不会自动补齐或截断输出。
+  # 必须满足 1 <= execute_horizon <= prediction_horizon <= max_prediction_horizon <= 256。
+  max_prediction_horizon: 8
+  # 执行步数 M：每次预测只执行前 2 行，每发出一行动作后等待下一份观察确认。
+  # 执行完 M 行后丢弃剩余 H-M 行，根据最新观察重新推理。
+  execute_horizon: 2
+  # 动作约定的控制时间间隔，单位秒；0.05 秒对应名义 20 Hz 控制步长。
+  # 该值传给模型并写入动作块元数据，不负责定时发送动作；实际节奏受环境和推理影响。
+  control_dt_s: 0.05
+
+# 将模型的物理动作转换为环境/控制器要求的原生动作。
+control_adapter:
+  # LIBERO OSC 增量控制适配器；必须与上面的 eef_delta 动作空间配套。
+  type: libero_osc_delta
+  # 发给环境的原生动作维度，必须与 action.dimension 一致。
+  native_dimension: 7
+  # 平移缩放，单位米：原生平移命令 = 物理平移增量 / 0.05。
+  # 默认每个平移分量允许 [-0.05, 0.05] 米，例如 0.01 米转换为原生值 0.2。
+  translation_scale_m: 0.05
+  # 旋转缩放，单位弧度：原生旋转命令 = 物理旋转增量 / 0.5。
+  # 默认每个旋转分量允许 [-0.5, 0.5] 弧度；夹爪分量不做该缩放。
+  rotation_scale_rad: 0.5
+  # 限制来源标记，当前仅支持 robot_control_profile。
+  # 本配置不会自动读取外部机器人 profile；本例默认边界来自上述缩放参数及夹爪范围。
+  limits_source: robot_control_profile
+
+# 运行时超时和生命周期行为。所有 *_ms 字段的单位均为毫秒。
+runtime:
+  # 事件检查周期的配置值，必须为正整数；当前节点由 dataflow 的 tick 输入驱动。
+  # 单独修改此值不会改变 Dora 定时器，实际检查周期须同步核对 dataflow.yaml。
+  # 它不是模型推理频率，也不是机器人控制频率。
+  tick_ms: 20
+  # Provider API 每次 HTTP 尝试使用的连接/读取超时，120000 毫秒 = 120 秒。
+  # 底层 socket 超时不等同于严格的整次请求墙钟截止时间；运行时另设总推理预算。
+  # Provider API 总推理预算 = 此值 × (1 + inference_timeout_retries)，本例为 360 秒。
+  # local_python 不自动重试，其运行时总推理预算仍为此值。
+  inference_deadline_ms: 120000
+  # Provider API 超时后立即重发相同请求的次数，允许 0、1、2，省略时默认 2。
+  # 2 表示最多尝试 3 次；0 表示关闭重试。连接或读取超时可重试，
+  # HTTP 错误、解析失败、非法动作等错误不重试；重试成功则 episode 继续执行。
+  # 重试耗尽或超过总推理预算后，才进入失败流程；重发可能产生额外模型调用费用。
+  inference_timeout_retries: 2
+  # 动作发出后等待下一份完整观察/动作确认的超时，本例为 5 秒。
+  # 严格模式还校验 last_action_id；旧版模式依赖串行观察节奏。超时不自动重发动作。
+  feedback_timeout_ms: 5000
+  # 运行中等待一份完整观察（状态和所有相机）的超时，本例为 120 秒。
+  # 此超时独立于模型推理预算，不会因增加推理重试次数而自动延长。
+  observation_timeout_ms: 120000
+  # 当前只支持 abort_evaluation：最终失败后发出 policy_error，停止当前执行并要求 reset。
+  # 超时重试在进入该失败处理之前完成。
+  on_error: abort_evaluation
+  # 当前必须为 false：串行推理，不在执行动作的同时预取下一段模型结果。
+  async_prefetch: false
+  # 收到 benchmark_result 后是否退出节点进程。
+  # false：结束本批执行并清理上下文，但进程继续驻留，适合 benchmark serve 多次 run；
+  # true：收到结果后退出进程。
+  exit_on_benchmark_result: false
+
+# 给模型的历史上下文，仅包含环境已经确认执行的动作。
+context:
+  # 当前只支持 episode，历史不能跨 episode 复用。
+  scope: episode
+  # 最多保留的已确认执行动作条数，范围 0~256；不是动作块数量。
+  # 每条含物理动作、原生动作和源/确认观察身份；0 表示不保留执行历史。
+  max_executed_history: 4
+  # 当前必须为 false：不把预测但尚未执行或尚未确认的动作当作执行历史。
+  include_unexecuted_actions: false
+
+# episode 隔离规则；当前两项都必须为 true。
+lifecycle:
+  # 每次重置 episode 时清空执行历史，防止上一集动作污染新一集的模型输入。
+  reset_history_per_episode: true
+  # 重置、暂停、停止或更换指令后，丢弃旧 generation 的迟到推理结果，避免误执行。
+  # 此机制不会强制终止已经阻塞的模型调用；旧调用仍可能暂时占用唯一推理 worker。
+  reject_stale_results: true

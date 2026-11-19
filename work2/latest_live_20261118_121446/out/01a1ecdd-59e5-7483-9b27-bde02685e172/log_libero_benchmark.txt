@@ -1,0 +1,18 @@
+[libero_bench] layout_mode=per_episode camera=256x256
+{"timestamp":"2026-11-18T04:14:57.840897Z","level":"INFO","fields":{"message":"","name":"MeterProvider.GlobalSet","message":"Global meter provider is set. Meters can now be created using global::meter() or global::meter_with_scope()."},"target":"opentelemetry"}
+libero/libero/benchmark/__init__.py:164: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[libero_bench] serve 模式：benchmark=libero suite=libero_10 10 个 task，endpoint benchmark.controller 等待 tool_in
+[libero_bench] session gateway-4e4b3c922ded43bfb5f6fe6acbc1720a 开跑：tasks=[2] init_states=[0] num_runs=1 → 1 episodes
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+[robosuite WARNING] To setup, run: python /tmp/_MEILhZmTh/robosuite/scripts/setup_macros.py (__init__.py:9)
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[libero_bench] episode 1/1 开始 t2_i0_r0 :: turn on the stove and put the moka pot on it
+[libero_bench] policy vlm_libero: inference_timeout: model inference deadline exceeded
+[libero_bench] libero_10_t2_i0_r0 failed (36 步) | 累计 0/1
+[libero_bench] 批次 failed：success_rate = 0.0 （0/1 成功），耗时 339s
+[libero_bench] 结果已落盘：/home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/benchmark_results/libero_10_20261118_122038_gateway-4e4b3c922ded43bfb5f6fe6a.json
+[libero_bench] session gateway-4e4b3c922ded43bfb5f6fe6acbc1720a 结束，回到 idle
