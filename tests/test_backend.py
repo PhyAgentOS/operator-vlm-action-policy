@@ -91,6 +91,9 @@ def test_real_http_responses_api(monkeypatch):
     "```json\n%s\n```",
     "```\n%s\n```",
     " \n```JSON \r\n%s\r\n```\n ",
+    "Explanation before the action.\n```json\n%s\n```",
+    "```json\n%s\n```\nExplanation after the action.",
+    "Current state analysis.\n\n```json\n%s\n```\nDone.",
 ])
 def test_fenced_action_json(monkeypatch, style, template):
     actions = {"actions": [[0.01, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0]] * 4}
@@ -108,8 +111,10 @@ def test_fenced_action_json(monkeypatch, style, template):
 
 
 @pytest.mark.parametrize("text", [
-    "Explanation:\n```json\n{}\n```",
-    "```json\n{}\n```\nExplanation",
+    "Explanation: {\"actions\": []}",
+    "Explanation:\n```json\n{}\n```\n```python\npass\n```",
+    "```json\n{}\n```\n```json\n{}",
+    "```json\n{}\n``` trailing text on fence line",
     "```json\n{}",
     "{}\n```",
     "```python\n{}\n```",
@@ -445,6 +450,49 @@ def test_response_metadata_redacts_sensitive_identifiers_and_unknown_usage(monke
     assert diagnostic["output_tokens"] is diagnostic["reasoning_tokens"] is None
     assert diagnostic["visible_output_chars"] is None
     assert diagnostic["content_is_empty"] is True
+
+
+@pytest.mark.parametrize("style", ["chat_completions", "responses"])
+@pytest.mark.parametrize("effort", ["high", ""])
+def test_explicit_model_settings_override_environment(monkeypatch, style, effort):
+    monkeypatch.setenv("VLM_API_BASE", "https://environment.invalid/v1")
+    monkeypatch.setenv("VLM_MODEL", "environment-model")
+    monkeypatch.setenv("VLM_REASONING_EFFORT", "low")
+    monkeypatch.setenv("VLM_API_KEY", "test-secret")
+    client = ProviderBackend(PolicyConfig.from_mapping({"model": {
+        "api_style": style, "api_base": " https://policy.invalid/v1/ ",
+        "model_name": " policy-model ", "reasoning_effort": effort,
+    }}))
+    body = client.payload(REQUEST)
+    assert client.endpoint == "https://policy.invalid/v1/" + (
+        "responses" if style == "responses" else "chat/completions")
+    assert body["model"] == "policy-model"
+    assert client.key == "test-secret"
+    if effort:
+        assert (body["reasoning"]["effort"] if style == "responses"
+                else body["reasoning_effort"]) == effort
+    else:
+        assert "reasoning" not in body and "reasoning_effort" not in body
+
+
+def test_explicit_settings_work_without_model_environment(monkeypatch):
+    for name in ("VLM_API_BASE", "VLM_MODEL", "VLM_REASONING_EFFORT"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("PRIVATE_MODEL_KEY", "test-secret")
+    client = ProviderBackend(PolicyConfig.from_mapping({"model": {
+        "api_base": "https://policy.invalid/v1", "model_name": "policy-model",
+        "api_key_env": "PRIVATE_MODEL_KEY",
+    }}))
+    assert client.model == "policy-model" and client.effort == ""
+
+
+@pytest.mark.parametrize("name,value", [
+    ("api_base", ""), ("api_base", 123), ("model_name", " "),
+    ("model_name", False), ("reasoning_effort", []),
+])
+def test_invalid_explicit_model_settings(name, value):
+    with pytest.raises(ValueError):
+        PolicyConfig.from_mapping({"model": {name: value}})
 
 
 def test_missing_model_environment_fails_startup(monkeypatch):

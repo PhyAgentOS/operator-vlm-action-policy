@@ -1,6 +1,7 @@
 """Serial H/M policy state machine. Only the event-loop thread emits outputs."""
 from __future__ import annotations
 
+import json
 import threading
 import time
 from collections import deque
@@ -76,6 +77,8 @@ class PolicyRuntime:
                  clock: Callable[[], float] = time.monotonic, worker=None):
         config.validate()
         self.config, self.emit, self.clock = config, emit, clock
+        self.base_config = config
+        self.benchmark_context: dict[str, Any] = {}
         # Provider retries run serially in the worker and each gets its own timeout.
         attempts = (1 + config.runtime.inference_timeout_retries
                     if config.model.backend == "provider_api" else 1)
@@ -146,6 +149,37 @@ class PolicyRuntime:
         self.emit("policy_error", payload, self._metadata())
         self._state("ERROR", code=code, message=message)
 
+    def _apply_contract(self, inputs: dict[str, Any], *, starting: bool = False) -> bool:
+        """Adopt a complete declaration atomically at a lifecycle boundary."""
+        try:
+            effective = (self.base_config.with_contract(inputs["contract"])
+                         if "contract" in inputs else self.config)
+            context = inputs.get("context", self.benchmark_context)
+            if not isinstance(context, dict):
+                raise ValueError("context must be an object")
+            # Synchronization is a transport property, not a robot action property.
+            if (effective.observation.synchronization != self.base_config.observation.synchronization
+                    or effective.observation.require_identity != self.base_config.observation.require_identity):
+                raise ValueError("contract cannot change synchronization")
+            if starting and effective != self.config and not self.needs_reset:
+                raise ValueError("active contract changes require reset")
+            # Snapshot JSON input; local callers must not mutate a worker's context.
+            context = json.loads(json.dumps(context, allow_nan=False))
+        except (ValueError, TypeError, OverflowError):
+            self._fail("invalid_command", "invalid benchmark contract or context")
+            return False
+        if effective != self.config:
+            self._invalidate(clear_history=True)
+            if effective.observation != self.config.observation:
+                self.early_parts.clear()
+                self.legacy_early.clear()
+            self.config = effective
+            self.adapter = ActionAdapter(effective)
+            self.buffer = ObservationBuffer(effective)
+            self.buffer.reset(self.binding)
+        self.benchmark_context = context
+        return True
+
     def command(self, policy_id: str, command: str, inputs: dict[str, Any]) -> None:
         if policy_id != self.config.policy_id or self.closed:
             return
@@ -179,6 +213,8 @@ class PolicyRuntime:
                 return
             self.seen_commands.add(signature)
         if command == "start":
+            if not self._apply_contract(inputs, starting=True):
+                return
             self.running = True
             self.failed = False
             if not self.needs_reset:
@@ -205,6 +241,8 @@ class PolicyRuntime:
                     and last_identity and identity and identity.epoch == last_identity.epoch
                     and identity.step_id <= last_identity.step_id):
                 self._state("WAIT_RESET", reason="resume_requires_fresh_identity")
+                return
+            if not self._apply_contract(inputs):
                 return
             if not self.config.observation.require_identity:
                 # Old benchmarks carry no episode identity. This local UUID fences
@@ -365,7 +403,8 @@ class PolicyRuntime:
             self._fail("missing_instruction", "set_instruction must precede the first inference")
             return
         token = (self.generation, uuid4().hex)
-        request = InferenceRequest(self.instruction, self.latest, tuple(self.history))
+        request = InferenceRequest(self.instruction, self.latest, tuple(self.history),
+                                   config=self.config, context=self.benchmark_context)
         self.wait_started = None
         self.worker.submit(token, request)
         self.active_token = token

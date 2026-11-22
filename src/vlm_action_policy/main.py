@@ -47,7 +47,7 @@ def run_node(config: PolicyConfig, node=None, backend=None) -> int:
 
     def emit(port: str, payload: Any, metadata: dict[str, Any]) -> None:
         if port == "action":
-            names = config.action.joint_names + ["gripper"] if config.action.space == "joint_position" else config.action.layout
+            names = runtime.config.action.layout
             value = JointCommand(name=names, position=payload).to_arrow()
         else:
             value = pa.array([json.dumps(payload, ensure_ascii=False, allow_nan=False)])
@@ -93,10 +93,10 @@ def run_node(config: PolicyConfig, node=None, backend=None) -> int:
                     runtime.command(command.policy_id, command.command, command.inputs())
                 elif port == "proprio_state":
                     state = JointState.from_arrow(event["value"])
-                    if state.name != config.observation.state_names:
+                    if state.name != runtime.config.observation.state_names:
                         raise ValueError("state wire names/order must match configured state_names")
                     runtime.observe(port, state.position, metadata)
-                elif port in config.observation.image_inputs:
+                elif port in runtime.config.observation.image_inputs:
                     runtime.observe(port, image_to_png(event["value"]), metadata)
                 elif port == "benchmark_result":
                     runtime.benchmark_result()

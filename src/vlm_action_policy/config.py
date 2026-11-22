@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +20,10 @@ class ModelConfig:
     structured_output: bool = True
     max_output_tokens: int = 2048
     local_factory: str = ""
+    # Explicit YAML values override environment defaults. None means fallback.
+    api_base: str | None = None
+    model_name: str | None = None
+    reasoning_effort: str | None = None
 
 
 @dataclass(frozen=True)
@@ -53,6 +57,10 @@ class ActionConfig:
     joint_names: list[str] = field(default_factory=list)
     # Per-step maximum change in the corresponding action unit, including gripper.
     max_step_delta: list[float] = field(default_factory=list)
+    # Generic vector semantics, one description per output coordinate.
+    descriptions: list[str] = field(default_factory=list)
+    # Optional observed-state name per coordinate for absolute-target step limits.
+    state_keys: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -64,6 +72,9 @@ class AdapterConfig:
     limits_source: str = "robot_control_profile"
     lower_bounds: list[float] = field(default_factory=list)
     upper_bounds: list[float] = field(default_factory=list)
+    # Generic native[i] = model[i] * scale[i] + offset[i]; empty means identity.
+    scale: list[float] = field(default_factory=list)
+    offset: list[float] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -129,6 +140,26 @@ class PolicyConfig:
         result.validate()
         return result
 
+    def with_contract(self, contract: dict[str, Any]) -> PolicyConfig:
+        """Apply benchmark-owned sections only; model/runtime settings remain local."""
+        if not isinstance(contract, dict) or contract.get("version") != 1 or type(contract.get("version")) is not int:
+            raise ValueError("benchmark contract requires version=1")
+        allowed = {"version", "action", "control_adapter", "observation"}
+        if set(contract) - allowed or not {"action", "control_adapter"} <= set(contract):
+            raise ValueError("contract requires action/control_adapter and optional observation")
+        raw = asdict(self)
+        # Sections are complete declarations; do not inherit a previous robot's layout.
+        for name in allowed - {"version"}:
+            if name in contract:
+                raw[name] = contract[name]
+        if not isinstance(raw["action"], dict) or raw["action"].get("space") != "generic":
+            raise ValueError("benchmark-supplied contracts must use generic action space")
+        required = {"space", "frame", "dimension", "layout", "units", "descriptions",
+                    "prediction_horizon", "execute_horizon", "control_dt_s", "gripper_convention"}
+        if not required <= set(raw["action"]):
+            raise ValueError("benchmark action contract is incomplete")
+        return self.from_mapping(raw)
+
     @classmethod
     def load(cls, path: str | Path) -> PolicyConfig:
         with Path(path).open(encoding="utf-8") as stream:
@@ -154,7 +185,7 @@ class PolicyConfig:
         require(strings(a.layout) and len(a.layout) == a.dimension, "action.layout must have D distinct names")
         require(isinstance(a.units, list) and len(a.units) == a.dimension, "action.units must have D entries")
         require(positive(a.control_dt_s), "control_dt_s must be positive and finite")
-        require(a.gripper_convention == "minus1_open_plus1_close", "unsupported gripper convention")
+        require(a.space == "generic" or a.gripper_convention == "minus1_open_plus1_close", "unsupported gripper convention")
         require(type(adapter.native_dimension) is int and adapter.native_dimension == a.dimension, "native dimension must equal D")
         require(adapter.limits_source == "robot_control_profile", "unsupported limits_source")
         require(strings(obs.state_semantics), "state_semantics must be distinct nonempty names")
@@ -186,8 +217,31 @@ class PolicyConfig:
             ), "joint_position requires positive max_step_delta for every action dimension")
             require("gripper" in obs.state_semantics,
                     "joint_position requires gripper in state_semantics")
+        elif a.space == "generic":
+            require(adapter.type == "affine", "generic actions require affine adapter")
+            require(isinstance(a.frame, str) and bool(a.frame.strip()), "generic action frame is required")
+            require(all(isinstance(unit, str) and unit.strip() for unit in a.units), "generic units must be nonempty strings")
+            require(isinstance(a.descriptions, list) and len(a.descriptions) == a.dimension
+                    and all(isinstance(text, str) and text.strip() for text in a.descriptions),
+                    "generic actions require D descriptions")
+            require(len(adapter.lower_bounds) == a.dimension == len(adapter.upper_bounds),
+                    "generic actions require explicit D-element bounds")
+            require(not a.joint_names, "generic actions use layout and state_keys instead of joint_names")
+            require(isinstance(a.state_keys, list) and (not a.state_keys or (
+                len(a.state_keys) == a.dimension and all(key in obs.state_semantics for key in a.state_keys))),
+                "state_keys must name D observed state coordinates")
+            require(isinstance(a.max_step_delta, list) and (not a.max_step_delta or (
+                len(a.max_step_delta) == a.dimension and all(positive(v) for v in a.max_step_delta)
+                and bool(a.state_keys))), "generic max_step_delta requires D positive limits and state_keys")
         else:
             raise ValueError(f"unsupported action space: {a.space}")
+        for name in ("scale", "offset"):
+            values = getattr(adapter, name)
+            require(isinstance(values, list) and (not values or (
+                a.space == "generic" and len(values) == a.dimension and all(
+                    type(v) in (int, float) and math.isfinite(v)
+                    and (name != "scale" or v != 0) for v in values))),
+                f"adapter.{name} requires D finite values (nonzero scales) for generic actions")
         if adapter.lower_bounds or adapter.upper_bounds:
             require(len(adapter.lower_bounds) == a.dimension == len(adapter.upper_bounds), "bounds must have D entries")
             require(all(type(x) in (int, float) and math.isfinite(x) for x in adapter.lower_bounds + adapter.upper_bounds), "bounds must be finite numbers")
@@ -195,7 +249,8 @@ class PolicyConfig:
             if a.space == "eef_delta":
                 physical = [adapter.translation_scale_m] * 3 + [adapter.rotation_scale_rad] * 3 + [1.0]
                 require(all(-bound <= lo < hi <= bound for lo, hi, bound in zip(adapter.lower_bounds, adapter.upper_bounds, physical)), "EEF bounds exceed controller range")
-            require(-1 <= adapter.lower_bounds[-1] < adapter.upper_bounds[-1] <= 1, "gripper bounds must stay within [-1,1]")
+            if a.space != "generic":
+                require(-1 <= adapter.lower_bounds[-1] < adapter.upper_bounds[-1] <= 1, "gripper bounds must stay within [-1,1]")
         for name in ("tick_ms", "inference_deadline_ms", "feedback_timeout_ms", "observation_timeout_ms"):
             value = getattr(self.runtime, name)
             require(type(value) is int and value > 0, f"runtime.{name} must be a positive integer")
@@ -211,6 +266,11 @@ class PolicyConfig:
         require(self.model.api_style in {"chat_completions", "responses"}, "unknown model.api_style")
         require(type(self.model.structured_output) is bool, "structured_output must be boolean")
         require(type(self.model.max_output_tokens) is int and self.model.max_output_tokens > 0, "max_output_tokens must be positive")
+        for name in ("api_base", "model_name", "reasoning_effort"):
+            value = getattr(self.model, name)
+            require(value is None or (isinstance(value, str) and "\x00" not in value
+                    and (name == "reasoning_effort" or bool(value.strip()))),
+                    f"model.{name} must be a string or null (base/model cannot be empty)")
         for name in ("api_base_env", "api_key_env", "model_name_env", "effort_env"):
             value = getattr(self.model, name)
             valid_name = (isinstance(value, str) and bool(value)

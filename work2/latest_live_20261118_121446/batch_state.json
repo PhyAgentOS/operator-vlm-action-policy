@@ -1,8 +1,0 @@
-{
-  "created_at": "2026-11-18T04:14:55.016720+00:00",
-  "gateway_url": "http://127.0.0.1:19023",
-  "client_status": "terminal_received",
-  "invocation_id": "gateway-4e4b3c922ded43bfb5f6fe6acbc1720a",
-  "profile": "gpt6_vlm",
-  "output_dir": "/home/gx/Desktop/operator-vlm-action-policy/work2/latest_live_20261118_121446/report"
-}
