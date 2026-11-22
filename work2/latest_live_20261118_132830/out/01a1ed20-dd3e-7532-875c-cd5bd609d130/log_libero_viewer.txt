@@ -1,2 +1,0 @@
-{"timestamp":"2026-11-18T05:28:42.359731Z","level":"INFO","fields":{"message":"","name":"MeterProvider.GlobalSet","message":"Global meter provider is set. Meters can now be created using global::meter() or global::meter_with_scope()."},"target":"opentelemetry"}
-[libero_viewer] http://127.0.0.1:19024

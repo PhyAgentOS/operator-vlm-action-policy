@@ -145,13 +145,13 @@ class ActionAdapter:
         low, high = self.bounds()
         result = []
         previous_target = None
-        if a.space == "joint_position":
+        if a.space == "joint_position" or (a.space == "generic" and a.max_step_delta):
             if initial_state is None:
                 raise ValueError("joint_position validation requires the source observation state")
             semantic_indexes = {name: index for index, name in enumerate(
                 self.config.observation.state_semantics
             )}
-            target_semantics = a.joint_names + ["gripper"]
+            target_semantics = a.state_keys if a.space == "generic" else a.joint_names + ["gripper"]
             state_indexes = [semantic_indexes[name] for name in target_semantics]
             previous_target = [initial_state[index] for index in state_indexes]
         for index, row in enumerate(rows):
@@ -173,6 +173,13 @@ class ActionAdapter:
 
     def to_native(self, action: list[float]) -> list[float]:
         c = self.config.control_adapter
+        if c.type == "affine":
+            scales = c.scale or [1.0] * self.config.action.dimension
+            offsets = c.offset or [0.0] * self.config.action.dimension
+            native = [value * scale + offset for value, scale, offset in zip(action, scales, offsets)]
+            if any(not math.isfinite(value) for value in native):
+                raise ValueError("native action contains nonfinite values")
+            return native
         if c.type == "joint_position":
             return list(action)
         scales = [c.translation_scale_m] * 3 + [c.rotation_scale_rad] * 3 + [1.0]

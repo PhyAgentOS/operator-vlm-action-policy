@@ -1,0 +1,123 @@
+# RoboTwin 通用接入示例：双臂各 6 个关节 + 1 个夹爪，共 14 维，三路 RGB 相机。
+# 这是桥接端需要遵循的示例协议，并非所有 RoboTwin 机器人通用的原生定义。
+# 使用前核对：动作/状态顺序、绝对关节目标(rad)、夹爪归一化约定、机器人限位和控制周期。
+# 以下关节上下限和每步变化量是示例值，必须替换为实际机器人配置。
+policy_id: vlm_robotwin
+mode: standalone
+
+model:
+  backend: provider_api
+  api_style: chat_completions  # 也可使用 responses
+  api_base_env: VLM_API_BASE
+  api_key_env: VLM_API_KEY
+  model_name_env: VLM_MODEL
+  effort_env: VLM_REASONING_EFFORT
+  structured_output: true
+  max_output_tokens: 16384
+
+observation:
+  # dataflow 必须将桥接端的三路 Forge Image 接到这些输入端口。
+  # 三路相机和 proprio_state 全部到齐后才进行推理。
+  image_inputs:
+    image/head: head
+    image/left_wrist: left_wrist
+    image/right_wrist: right_wrist
+  # 桥接端发送的 Forge JointState.name 必须与下面的顺序完全一致。
+  # 此示例要求状态和动作的夹爪值均为 [0,1]，0=闭合、1=张开。
+  state_names:
+    [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6,
+     left_gripper, right_joint1, right_joint2, right_joint3, right_joint4,
+     right_joint5, right_joint6, right_gripper]
+  state_semantics:
+    [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6,
+     left_gripper, right_joint1, right_joint2, right_joint3, right_joint4,
+     right_joint5, right_joint6, right_gripper]
+  # 桥接端需在 reset_scene 和每步观测中提供完整身份字段：
+  # episode_id、epoch、obs_id、step_id、instruction_version。
+  # 同一步的状态和三张图片共享这些字段，执行后观测还应带 last_action_id。
+  synchronization: correlated_observation
+  require_identity: true
+
+action:
+  space: generic
+  frame: joint_space
+  dimension: 14
+  layout:
+    [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6,
+     left_gripper, right_joint1, right_joint2, right_joint3, right_joint4,
+     right_joint5, right_joint6, right_gripper]
+  units:
+    [rad, rad, rad, rad, rad, rad, normalized,
+     rad, rad, rad, rad, rad, rad, normalized]
+  descriptions:
+    - "Absolute left arm joint 1 target in radians; not a delta."
+    - "Absolute left arm joint 2 target in radians; not a delta."
+    - "Absolute left arm joint 3 target in radians; not a delta."
+    - "Absolute left arm joint 4 target in radians; not a delta."
+    - "Absolute left arm joint 5 target in radians; not a delta."
+    - "Absolute left arm joint 6 target in radians; not a delta."
+    - "Absolute normalized left gripper opening: 0 fully closed, 1 fully open."
+    - "Absolute right arm joint 1 target in radians; not a delta."
+    - "Absolute right arm joint 2 target in radians; not a delta."
+    - "Absolute right arm joint 3 target in radians; not a delta."
+    - "Absolute right arm joint 4 target in radians; not a delta."
+    - "Absolute right arm joint 5 target in radians; not a delta."
+    - "Absolute right arm joint 6 target in radians; not a delta."
+    - "Absolute normalized right gripper opening: 0 fully closed, 1 fully open."
+  gripper_convention: "Indices 6 and 13: normalized opening in [0,1]; 0=closed, 1=open."
+  # 初次联调先使用 H=M=1；每次执行后等待反馈并重新规划。
+  prediction_horizon: 1
+  max_prediction_horizon: 8
+  execute_horizon: 1
+  # 预期每行动作的时间语义；实际推进/插值由桥接端实现。
+  control_dt_s: 0.05
+  # 绝对目标逐步变化校验：先与当前观测比较，再逐行比较。
+  state_keys:
+    [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6,
+     left_gripper, right_joint1, right_joint2, right_joint3, right_joint4,
+     right_joint5, right_joint6, right_gripper]
+  max_step_delta:
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2,
+     0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]
+
+control_adapter:
+  type: affine
+  native_dimension: 14
+  # 来源标签，不会自动读取机器人限位文件。
+  limits_source: robot_control_profile
+  # 示例范围：关节 [-pi, pi] rad，两个夹爪 [0,1]。
+  # 以下范围约束转换前的模型输出；须按实际机器人修改。
+  lower_bounds:
+    [-3.141592653589793, -3.141592653589793, -3.141592653589793,
+     -3.141592653589793, -3.141592653589793, -3.141592653589793, 0.0,
+     -3.141592653589793, -3.141592653589793, -3.141592653589793,
+     -3.141592653589793, -3.141592653589793, -3.141592653589793, 0.0]
+  upper_bounds:
+    [3.141592653589793, 3.141592653589793, 3.141592653589793,
+     3.141592653589793, 3.141592653589793, 3.141592653589793, 1.0,
+     3.141592653589793, 3.141592653589793, 3.141592653589793,
+     3.141592653589793, 3.141592653589793, 3.141592653589793, 1.0]
+  # 原生动作 = 模型输出 * scale + offset。此处为恒等转换。
+  # 若 RoboTwin 原生夹爪单位/方向不同，由此处或桥接端进行明确转换。
+  scale: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  offset: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+runtime:
+  # 实际 tick 频率还需在 dataflow 中配置 dora/timer/millis/20。
+  tick_ms: 20
+  inference_deadline_ms: 120000
+  inference_timeout_retries: 2
+  feedback_timeout_ms: 5000
+  observation_timeout_ms: 120000
+  on_error: abort_evaluation
+  async_prefetch: false
+  exit_on_benchmark_result: false
+
+context:
+  scope: episode
+  max_executed_history: 4
+  include_unexecuted_actions: false
+
+lifecycle:
+  reset_history_per_episode: true
+  reject_stale_results: true
