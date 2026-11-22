@@ -1,0 +1,55 @@
+# RoboTwin bridge <-> VLM policy：14 维动作、三路相机。
+# 本仓库尚未提供 RoboTwin 桥接程序；ROBOTWIN_BRIDGE_BIN 必须指向实际实现的可执行入口。
+# VLM_POLICY_BIN 必须指向包含本项目 generic 契约功能的可执行入口。
+# 两个变量均使用绝对路径。具体启动命令和端口协议见同目录 README.md。
+nodes:
+  - id: robotwin_bridge
+    path: ${ROBOTWIN_BRIDGE_BIN}
+    env:
+      # 桥接程序应使用该 policy_id 发送 PolicyCommand。
+      POLICY_ID: vlm_robotwin
+    inputs:
+      tick: dora/timer/millis/20
+      action:
+        source: operator-vlm-action-policy/action
+        queue_size: 32
+      policy_error:
+        source: operator-vlm-action-policy/policy_error
+        queue_size: 32
+    outputs:
+      - policy_command
+      - proprio_state
+      - image/head
+      - image/left_wrist
+      - image/right_wrist
+      - benchmark_result
+
+  - id: operator-vlm-action-policy
+    path: ${VLM_POLICY_BIN}
+    # 本项目 CLI 支持 --config；配置路径相对于启动目录。
+    args: --config policy.yaml
+    inputs:
+      tick: dora/timer/millis/20
+      policy_command:
+        source: robotwin_bridge/policy_command
+        queue_size: 32
+      proprio_state:
+        source: robotwin_bridge/proprio_state
+        queue_size: 1
+      image/head:
+        source: robotwin_bridge/image/head
+        queue_size: 1
+      image/left_wrist:
+        source: robotwin_bridge/image/left_wrist
+        queue_size: 1
+      image/right_wrist:
+        source: robotwin_bridge/image/right_wrist
+        queue_size: 1
+      benchmark_result:
+        source: robotwin_bridge/benchmark_result
+        queue_size: 32
+    outputs:
+      - action
+      - action_chunk
+      - policy_state
+      - policy_error
