@@ -41,7 +41,8 @@ def test_generic_vector_bounds_and_conversion():
     adapter = ActionAdapter(cfg)
     assert adapter.validate_chunk({"actions": [[0.5] * 14]}) == [[0.5] * 14]
     assert adapter.to_native([0.5] * 14) == pytest.approx([1.1] * 14)
-    for rows in ([[0] * 13], [[3] * 14], [[float("nan")] * 14]):
+    assert adapter.validate_chunk({"actions": [[3, -3] * 7]}) == [[2.0, -2.0] * 7]
+    for rows in ([[0] * 13], [[float("nan")] * 14]):
         with pytest.raises(ValueError):
             adapter.validate_chunk({"actions": rows})
 

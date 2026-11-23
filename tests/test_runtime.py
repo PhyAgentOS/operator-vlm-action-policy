@@ -147,8 +147,7 @@ def test_wrong_ack_fails_without_extra_action(rig):
     {"actions": [[0] * 7]},
     {"actions": [[float("nan")] * 7] * 4},
     {"actions": [[True] * 7] * 4},
-    {"actions": [[0, 0, 0, 0, 0, 0, 2]] * 4},
-    {"actions": [[0.06, 0, 0, 0, 0, 0, -1]] * 4},
+    {"actions": [[float("inf")] * 7] * 4},
     {"actions": [[0] * 8] * 4},
     {"actions": [[0] * 7] * 4, "success": True},
 ])
@@ -160,14 +159,24 @@ def test_invalid_entire_chunk_never_executes(rig, response):
     assert runtime.failed and not sent(outputs, "action")
 
 
-def test_validate_unused_tail_before_any_execution(rig):
+def test_clamp_entire_chunk_before_execution_and_record_clamped_history(rig):
     runtime, outputs, worker, _ = rig
     response = deepcopy(actions())
+    response["actions"][0] = [10, -10, 0.01, 10, -10, 0.1, 2]
     response["actions"][-1][0] = 10
     observation(runtime)
     worker.complete(response)
     runtime.tick()
-    assert runtime.failed and not sent(outputs, "action")
+    assert not runtime.failed and not sent(outputs, "policy_error")
+    chunk = sent(outputs, "action_chunk")[0][1]["actions"]
+    assert chunk[0] == pytest.approx([0.05, -0.05, 0.01, 0.5, -0.5, 0.1, 1])
+    assert chunk[-1][0] == 0.05
+    first = sent(outputs, "action")[0]
+    assert first[1] == pytest.approx([1, -1, 0.2, 1, -1, 0.2, 1])
+    assert response["actions"][0][0] == 10
+    observation(runtime, 1, ack=first[2]["action_id"])
+    assert runtime.history[0]["action"] == chunk[0]
+    assert runtime.history[0]["native_action"] == first[1]
 
 
 @pytest.mark.parametrize("phase,code", [("infer", "inference_timeout"), ("ack", "feedback_timeout"), ("obs", "observation_timeout")])
