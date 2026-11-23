@@ -159,16 +159,21 @@ class ActionAdapter:
                 raise ValueError(f"action row {index} must contain D={a.dimension} numbers")
             if any(type(v) not in (float, int) or not math.isfinite(v) for v in row):
                 raise ValueError(f"action row {index} contains nonfinite or nonnumeric values")
-            if any(v < lo or v > hi for v, lo, hi in zip(row, low, high)):
-                raise ValueError(f"action row {index} exceeds configured physical limits")
-            if previous_target is not None:
-                for target_index, name in enumerate(a.layout):
-                    if abs(row[target_index] - previous_target[target_index]) > a.max_step_delta[target_index]:
+            bounded = []
+            for target_index, (value, lo, hi) in enumerate(zip(row, low, high)):
+                if previous_target is not None:
+                    previous = previous_target[target_index]
+                    delta = a.max_step_delta[target_index]
+                    lo = max(lo, previous - delta)
+                    hi = min(hi, previous + delta)
+                    if lo > hi:
                         raise ValueError(
-                            f"action row {index} exceeds max_step_delta for {name}"
+                            f"action row {index} has no feasible target for {a.layout[target_index]}"
                         )
-                previous_target = row
-            result.append([float(v) for v in row])
+                bounded.append(float(min(hi, max(lo, value))))
+            if previous_target is not None:
+                previous_target = bounded
+            result.append(bounded)
         return result
 
     def to_native(self, action: list[float]) -> list[float]:

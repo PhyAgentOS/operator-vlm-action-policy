@@ -63,9 +63,13 @@ def test_joint_position_requires_real_state_and_explicit_limits():
     adapter = ActionAdapter(cfg)
     rows = adapter.validate_chunk({"actions": [[0.3, -0.2, -0.5]] * 4}, (0, 0, 0))
     assert adapter.to_native(rows[0]) == [0.3, -0.2, -0.5]
-    with pytest.raises(ValueError, match="max_step_delta"):
-        adapter.validate_chunk({"actions": [[0.3, -0.2, -0.5], [0.9, -0.2, -0.5],
-                                              [0.9, -0.2, -0.5], [0.9, -0.2, -0.5]]}, (0, 0, 0))
+    rows = adapter.validate_chunk({"actions": [[3, -3, -2]] * 4}, (0, 0, 0))
+    for actual, expected in zip(rows, [
+        [0.5, -0.5, -0.5], [1, -1, -1], [1.5, -1.5, -1], [2, -2, -1],
+    ]):
+        assert actual == pytest.approx(expected)
+    with pytest.raises(ValueError, match="no feasible target"):
+        adapter.validate_chunk({"actions": [[0, 0, 0]] * 4}, (3, 0, 0))
     del raw["control_adapter"]["lower_bounds"]
     with pytest.raises(ValueError):
         PolicyConfig.from_mapping(raw)
