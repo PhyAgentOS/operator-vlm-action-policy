@@ -3,10 +3,11 @@ mode: standalone
 model:
   backend: provider_api
   api_style: chat_completions  # 可改为 responses；API base 应含服务的 /v1 前缀
-  api_base_env: VLM_API_BASE
-  api_key_env: VLM_API_KEY
-  model_name_env: VLM_MODEL
-  effort_env: VLM_REASONING_EFFORT
+  # Replace these example values with your deployment's model settings.
+  api_base: "https://your-provider.example/v1"
+  api_key: "your-api-key"
+  model_name: "your-vision-model"
+  reasoning_effort: ""
   structured_output: true
   max_output_tokens: 16384
 observation:

@@ -13,9 +13,9 @@ cd operator-vlm-action-policy
 
 启动器要求宿主提供 `uv` 和 Python 3.12，通过 `uv sync --frozen` 准备依赖，并保留调用方工作目录。`operator-vlm-action-policy` 保留为同一启动器的兼容入口。
 
-`gpt6_vlm` 可从 `${XDG_CONFIG_HOME:-$HOME/.config}/paos/libero/gpt6_vlm.json` 读取本机私有模型配置，或通过 `VLM_ENV_FILE` / `--env-file` 指定。JSON 键为 `VLM_API_BASE`、`VLM_API_KEY`、`VLM_MODEL` 和可选的 `VLM_REASONING_EFFORT`，文件权限应为 0600；已设置的非空环境变量优先。`--check-env --check-config` 只做本地检查，不请求模型。该私有文件不随节点或 Skill 分发。
+在 `policy.yaml` 的 `model` 段直接填写 `api_base`、`api_key`、`model_name` 和 `reasoning_effort`。启动器和 Python 入口不再读取默认私有 JSON、`VLM_ENV_FILE` 或 `--env-file`。显式 YAML 值优先；字段为 null 或省略时，仍兼容对应的 `*_env` 环境变量。`reasoning_effort: ""` 明确禁用推理强度。`--check-env --check-config` 只做本地检查，不请求模型。
 
-直接运行模型前，也可以在当前 shell 设置部署环境提供的值（这些值不放入 YAML 或归档）：
+使用旧的环境变量配置时，需省略或设为 null 对应的 YAML 显式字段，再设置：
 
 ```bash
 export VLM_API_BASE='https://your-provider.example/v1'

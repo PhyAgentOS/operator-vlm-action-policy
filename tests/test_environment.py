@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 
 import pytest
 
@@ -50,10 +49,44 @@ def test_offline_environment_check_does_not_infer(tmp_path, monkeypatch, capsys)
     for name in NAMES:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(cli, "run_node", lambda *_: pytest.fail("offline check started Dora"))
-    path = private_file(tmp_path, {"VLM_API_BASE": "http://127.0.0.1:1/v1",
-                                   "VLM_API_KEY": "dummy-secret-not-logged", "VLM_MODEL": "local-model"})
-    config = Path(__file__).resolve().parents[1] / "examples/gpt6_vlm/policy.yaml"
-    assert main(["--config", str(config), "--env-file", str(path), "--check-env", "--check-config"]) == 0
+    # Even a malformed legacy JSON must not be opened during startup.
+    path = tmp_path / "obsolete.json"
+    path.write_text("not valid JSON")
+    monkeypatch.setenv("VLM_ENV_FILE", str(path))
+    config = tmp_path / "policy.yaml"
+    config.write_text("""model:
+  api_base: http://127.0.0.1:1/v1
+  api_key: dummy-secret-not-logged
+  model_name: local-model
+  reasoning_effort: ""
+""")
+    assert main(["--config", str(config), "--check-env", "--check-config"]) == 0
     output = capsys.readouterr()
     assert '"valid": true' in output.out
     assert "dummy-secret-not-logged" not in output.out + output.err
+
+
+def test_normal_startup_ignores_legacy_file(tmp_path, monkeypatch):
+    import vlm_action_policy.main as cli
+    from vlm_action_policy.backend import ProviderBackend
+
+    for name in NAMES:
+        monkeypatch.delenv(name, raising=False)
+    obsolete = tmp_path / "obsolete.json"
+    obsolete.write_text("not valid JSON")
+    monkeypatch.setenv("VLM_ENV_FILE", str(obsolete))
+    config = tmp_path / "policy.yaml"
+    config.write_text("""model:
+  api_base: http://127.0.0.1:1/v1
+  api_key: dummy-secret-not-logged
+  model_name: local-model
+  reasoning_effort: ""
+""")
+    called = []
+    def run(config):
+        client = ProviderBackend(config)
+        called.append(client.model)
+        return 0
+    monkeypatch.setattr(cli, "run_node", run)
+    assert main(["--config", str(config)]) == 0
+    assert called == ["local-model"]

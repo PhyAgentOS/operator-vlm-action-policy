@@ -122,33 +122,23 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Standalone VLM action policy Dora node")
     parser.add_argument("--config", default=os.environ.get("POLICY_CONFIG"), help="policy YAML path (or POLICY_CONFIG)")
     parser.add_argument("--check-config", action="store_true", help="validate YAML without loading a model or Dora")
-    parser.add_argument("--env-file", default=os.environ.get("VLM_ENV_FILE"), help="optional private JSON model defaults")
-    parser.add_argument("--check-env", action="store_true", help="also validate provider settings offline")
+    parser.add_argument("--check-env", action="store_true", help="validate resolved policy model settings offline")
     args = parser.parse_args(argv)
     if not args.config:
         parser.error("--config or POLICY_CONFIG is required")
     try:
         config = PolicyConfig.load(args.config)
-        if args.check_env or not args.check_config:
-            from .environment import load_environment
+        if args.check_env and config.model.backend == "provider_api":
+            from .backend import ProviderBackend
 
-            load_environment(args.env_file, {
-                "VLM_API_BASE": config.model.api_base_env,
-                "VLM_API_KEY": config.model.api_key_env,
-                "VLM_MODEL": config.model.model_name_env,
-                "VLM_REASONING_EFFORT": config.model.effort_env,
-            })
-            if args.check_env and config.model.backend == "provider_api":
-                from .backend import ProviderBackend
-
-                ProviderBackend(config)  # Construction validates settings; it sends no request.
+            ProviderBackend(config)  # Construction validates settings; it sends no request.
         if args.check_config or args.check_env:
             print(json.dumps({"policy_id": config.policy_id, "mode": config.mode, "valid": True}))
             return 0
         return run_node(config)
     except (ValueError, OSError, ImportError):
         # Config/provider initialization exceptions can contain secrets or source code.
-        print("VLM policy startup failed; check configuration, dependencies and model environment.", file=sys.stderr)
+        print("VLM policy startup failed; check configuration, dependencies and policy model settings.", file=sys.stderr)
         return 1
 
 

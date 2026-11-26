@@ -174,7 +174,7 @@ class ProviderBackend:
 
         values = {
             "api_base": resolve(m.api_base, m.api_base_env),
-            "api_key": resolve(None, m.api_key_env),
+            "api_key": resolve(m.api_key, m.api_key_env),
             "model_name": resolve(m.model_name, m.model_name_env),
         }
         for name, value in values.items():

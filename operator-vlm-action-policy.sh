@@ -9,7 +9,5 @@ fi
 # Frozen sync repairs editable paths and entrypoint shebangs after a directory move.
 # Keep development tools for local tests/builds; they are not bundled in Skill archives.
 uv sync --project "$NODE_ROOT" --frozen --quiet
-DEFAULT_ENV_FILE="${XDG_CONFIG_HOME:-${HOME:?HOME is required}/.config}/paos/libero/gpt6_vlm.json"
 export PYTHONPATH="${NODE_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
-exec "$NODE_ROOT/.venv/bin/python" -m vlm_action_policy.main \
-  --env-file "${VLM_ENV_FILE:-$DEFAULT_ENV_FILE}" "$@"
+exec "$NODE_ROOT/.venv/bin/python" -m vlm_action_policy.main "$@"
