@@ -483,7 +483,7 @@ def test_explicit_settings_work_without_model_environment(monkeypatch):
         "api_base": "https://policy.invalid/v1", "model_name": "policy-model",
         "api_key_env": "PRIVATE_MODEL_KEY",
     }}))
-    assert client.model == "policy-model" and client.effort == ""
+    assert client.model == "policy-model" and client.effort == "low"
 
 
 @pytest.mark.parametrize("name,value", [
