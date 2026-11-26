@@ -1,6 +1,6 @@
 # operator-vlm-action-policy 策略配置示例。
 # 对应本仓库 examples/gpt6_vlm/dataflow.yaml 的 LIBERO 输入/动作协议。
-# 模型凭据通过环境变量或 --env-file 提供，不要把密钥写入此文件。
+# 模型参数由 model 段直接提供；示例值需替换为实际部署配置。
 # 修改输入端口、状态顺序或动作单位时，必须同时核对 benchmark / 控制器协议。
 # 未知字段、不支持的组合或非法取值会在启动时被拒绝。
 
@@ -18,17 +18,18 @@ model:
   # HTTP API 协议，可选 chat_completions 或 responses，须与服务端支持的接口匹配。
   # 分别在 API base 后追加 /chat/completions 或 /responses。
   api_style: chat_completions
-  # 可在 YAML 直接配置以下参数；显式值优先于环境变量，null/省略则回退。
-  # api_base: https://服务地址/v1
-  # model_name: your-vision-model
-  # reasoning_effort: low
+  # YAML 显式值优先；null/省略时兼容下方环境变量。启动不再读取私有 JSON。
+  api_base: "https://your-provider.example/v1"
+  api_key: "your-api-key"
+  model_name: "your-vision-model"
+  reasoning_effort: ""
   # reasoning_effort: "" 表示明确禁用推理强度参数，即使环境变量有值。
   # API 基础地址所在的环境变量名，不是地址本身。
   # 例如将 VLM_API_BASE 设置为 https://服务地址/v1；不要包含具体接口后缀。
   api_base_env: VLM_API_BASE
-  # API 密钥所在的环境变量名；provider_api 模式下该变量必须非空。
+  # 未填写 api_key 时使用的环境变量名。
   api_key_env: VLM_API_KEY
-  # 模型名称所在的环境变量名；provider_api 模式下该变量必须非空。
+  # 未填写 model_name 时使用的环境变量名。
   model_name_env: VLM_MODEL
   # 推理强度所在的环境变量名；为空时不向服务端发送推理强度参数。
   # 非空值会原样发送，允许值由模型服务决定；强度升高可能增加耗时及 token 用量。

@@ -22,6 +22,7 @@ class ModelConfig:
     local_factory: str = ""
     # Explicit YAML values override environment defaults. None means fallback.
     api_base: str | None = None
+    api_key: str | None = field(default=None, repr=False)
     model_name: str | None = None
     reasoning_effort: str | None = None
 
@@ -266,11 +267,11 @@ class PolicyConfig:
         require(self.model.api_style in {"chat_completions", "responses"}, "unknown model.api_style")
         require(type(self.model.structured_output) is bool, "structured_output must be boolean")
         require(type(self.model.max_output_tokens) is int and self.model.max_output_tokens > 0, "max_output_tokens must be positive")
-        for name in ("api_base", "model_name", "reasoning_effort"):
+        for name in ("api_base", "api_key", "model_name", "reasoning_effort"):
             value = getattr(self.model, name)
             require(value is None or (isinstance(value, str) and "\x00" not in value
                     and (name == "reasoning_effort" or bool(value.strip()))),
-                    f"model.{name} must be a string or null (base/model cannot be empty)")
+                    f"model.{name} must be a string or null (base/key/model cannot be empty)")
         for name in ("api_base_env", "api_key_env", "model_name_env", "effort_env"):
             value = getattr(self.model, name)
             valid_name = (isinstance(value, str) and bool(value)

@@ -15,9 +15,9 @@ cd operator-vlm-action-policy
 
 The launcher requires `uv` and Python 3.12 on the host, prepares dependencies with `uv sync --frozen`, and preserves the caller's working directory. `operator-vlm-action-policy` remains a compatibility entry point for the same launcher.
 
-`gpt6_vlm` can read private local model configuration from `${XDG_CONFIG_HOME:-$HOME/.config}/paos/libero/gpt6_vlm.json`, or from a file specified through `VLM_ENV_FILE` / `--env-file`. The JSON keys are `VLM_API_BASE`, `VLM_API_KEY`, `VLM_MODEL`, and optionally `VLM_REASONING_EFFORT`. File permissions should be 0600; existing nonempty environment variables take precedence. `--check-env --check-config` performs local checks only and does not call the model. This private file is not distributed with the node or Skill.
+Configure `api_base`, `api_key`, `model_name`, and `reasoning_effort` directly in the `model` section of `policy.yaml`. Neither the launcher nor the Python entry point loads a default private JSON file, `VLM_ENV_FILE`, or `--env-file`. Explicit YAML values take precedence; omitted or null fields still fall back to the corresponding `*_env` environment variables. An empty `reasoning_effort` disables that request parameter. `--check-env --check-config` validates settings locally without calling the model.
 
-Before calling the model, you can also set the values supplied by your deployment environment in the current shell; do not put these values in YAML files or archives:
+For legacy environment-based configuration, omit or set the corresponding explicit YAML fields to null, then set:
 
 ```bash
 export VLM_API_BASE='https://your-provider.example/v1'

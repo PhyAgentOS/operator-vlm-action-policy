@@ -461,13 +461,13 @@ def test_explicit_model_settings_override_environment(monkeypatch, style, effort
     monkeypatch.setenv("VLM_API_KEY", "test-secret")
     client = ProviderBackend(PolicyConfig.from_mapping({"model": {
         "api_style": style, "api_base": " https://policy.invalid/v1/ ",
-        "model_name": " policy-model ", "reasoning_effort": effort,
+        "model_name": " policy-model ", "api_key": " policy-secret ", "reasoning_effort": effort,
     }}))
     body = client.payload(REQUEST)
     assert client.endpoint == "https://policy.invalid/v1/" + (
         "responses" if style == "responses" else "chat/completions")
     assert body["model"] == "policy-model"
-    assert client.key == "test-secret"
+    assert client.key == "policy-secret"
     if effort:
         assert (body["reasoning"]["effort"] if style == "responses"
                 else body["reasoning_effort"]) == effort
@@ -489,6 +489,7 @@ def test_explicit_settings_work_without_model_environment(monkeypatch):
 @pytest.mark.parametrize("name,value", [
     ("api_base", ""), ("api_base", 123), ("model_name", " "),
     ("model_name", False), ("reasoning_effort", []),
+    ("api_key", ""), ("api_key", " "), ("api_key", 123), ("api_key", "bad\x00key"),
 ])
 def test_invalid_explicit_model_settings(name, value):
     with pytest.raises(ValueError):
@@ -500,3 +501,16 @@ def test_missing_model_environment_fails_startup(monkeypatch):
     monkeypatch.delenv("VLM_MODEL", raising=False)
     with pytest.raises(ValueError):
         ProviderBackend(PolicyConfig())
+
+
+def test_policy_credentials_work_without_environment(monkeypatch):
+    for name in ("VLM_API_BASE", "VLM_API_KEY", "VLM_MODEL", "VLM_REASONING_EFFORT"):
+        monkeypatch.delenv(name, raising=False)
+    cfg = PolicyConfig.from_mapping({"model": {
+        "api_base": "https://policy.invalid/v1", "api_key": "private-policy-key",
+        "model_name": "policy-model", "reasoning_effort": "",
+    }})
+    client = ProviderBackend(cfg)
+    assert client.key == "private-policy-key"
+    assert client.model == "policy-model" and client.effort == ""
+    assert "private-policy-key" not in repr(cfg)

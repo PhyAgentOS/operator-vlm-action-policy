@@ -61,6 +61,10 @@ dora run dataflow.yaml
 |---|---|---|
 | `backend` | `provider_api` | `provider_api` 调用 HTTP API；`local_python` 调用进程内插件。 |
 | `api_style` | `chat_completions` | API 路径风格：`chat_completions` 或 `responses`。程序在 base 后追加 `/chat/completions` 或 `/responses`。 |
+| `api_base` | `null` | YAML 中的 API base URL；显式值优先。 |
+| `api_key` | `null` | YAML 中的 API key；显式值优先，配置对象 repr 不输出该字段。 |
+| `model_name` | `null` | YAML 中的模型 ID；显式值优先。 |
+| `reasoning_effort` | `null` | YAML 中的推理强度；空字符串表示不发送该参数。 |
 | `api_base_env` | `VLM_API_BASE` | API base URL 所在环境变量的名字，不是 URL 值。 |
 | `api_key_env` | `VLM_API_KEY` | API key 所在环境变量的名字。 |
 | `model_name_env` | `VLM_MODEL` | 模型名所在环境变量的名字。 |
@@ -71,7 +75,7 @@ dora run dataflow.yaml
 
 模型需支持图像输入和动作 JSON。Provider 请求超时由 `runtime.inference_deadline_ms` 限制。API base 是服务前缀（通常包含 `/v1`），不要把完整 `/chat/completions` 路径填入。
 
-`backend: provider_api` 是当前 `gpt6_vlm` profile 的模式：配置只保存环境变量名称，实际 URL、密钥、模型名由运行环境提供。`api_style` 决定请求和响应解析协议，必须与所用服务兼容。服务无法返回结构化输出时可以关闭 `structured_output`，但模型仍必须返回本项目规定的 `actions` 对象；解析后的动作仍经过相同本地检查。`max_output_tokens` 要能容纳 H 行动作和模型附带内容，过小可能造成被截断的 JSON，导致该轮失败。
+`backend: provider_api` 是当前 `gpt6_vlm` profile 的模式：模型参数直接填写在 policy 的 model 段；字段为 null 或省略时兼容 *_env 环境变量。启动不再读取 VLM_ENV_FILE 或默认私有 JSON。`api_style` 决定请求和响应解析协议，必须与所用服务兼容。服务无法返回结构化输出时可以关闭 `structured_output`，但模型仍必须返回本项目规定的 `actions` 对象；解析后的动作仍经过相同本地检查。`max_output_tokens` 要能容纳 H 行动作和模型附带内容，过小可能造成被截断的 JSON，导致该轮失败。
 
 `local_python` 是进程内扩展点，不会自动加载任意 VLA 服务或外部进程。`local_factory` 指向 Python 可导入的工厂函数，返回对象需实现 `infer(request)`。本地插件接收结构化 request，并返回同一个 `{"actions": [...]}` 格式；它使用相同动作验证和排队流程。插件依赖需存在于当前 Python 环境或显式打进冻结包。
 
