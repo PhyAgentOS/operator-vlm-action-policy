@@ -22,7 +22,7 @@ model:
   api_base: "https://your-provider.example/v1"
   api_key: "your-api-key"
   model_name: "your-vision-model"
-  reasoning_effort: ""
+  reasoning_effort: "low"
   # reasoning_effort: "" 表示明确禁用推理强度参数，即使环境变量有值。
   # API 基础地址所在的环境变量名，不是地址本身。
   # 例如将 VLM_API_BASE 设置为 https://服务地址/v1；不要包含具体接口后缀。

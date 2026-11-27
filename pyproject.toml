@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "operator-vlm-action-policy"
-version = "0.1.0"
+version = "0.2.3"
 description = "Standalone vision-language action policy node for PhyAgentOS"
 requires-python = ">=3.12,<3.13"
 dependencies = [

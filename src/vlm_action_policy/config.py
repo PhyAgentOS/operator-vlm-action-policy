@@ -24,7 +24,7 @@ class ModelConfig:
     api_base: str | None = None
     api_key: str | None = field(default=None, repr=False)
     model_name: str | None = None
-    reasoning_effort: str | None = None
+    reasoning_effort: str | None = "low"
 
 
 @dataclass(frozen=True)
